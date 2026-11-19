@@ -43,8 +43,10 @@ COCO80 = [
 
 def download(url: str, dest: Path) -> None:
     if dest.is_file() and dest.stat().st_size > 0:
-        print("cached", dest)
-        return
+        if dest.suffix.lower() != ".zip" or zipfile.is_zipfile(dest):
+            print("cached", dest)
+            return
+        print("invalid cached ZIP; downloading again", dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     partial = dest.with_suffix(dest.suffix + ".part")
     print("downloading", url)
@@ -53,10 +55,13 @@ def download(url: str, dest: Path) -> None:
         try:
             with urllib.request.urlopen(request, timeout=180) as response, partial.open("wb") as handle:
                 shutil.copyfileobj(response, handle, length=1024 * 1024)
+            if dest.suffix.lower() == ".zip" and not zipfile.is_zipfile(partial):
+                raise zipfile.BadZipFile(f"download from {url} is not a valid ZIP archive")
             break
-        except OSError:
+        except (OSError, zipfile.BadZipFile) as error:
+            partial.unlink(missing_ok=True)
             if attempt == 3:
-                raise
+                raise SystemExit(f"download failed after 4 attempts: {url}\n{error}") from error
             time.sleep(2 * (attempt + 1))
     partial.replace(dest)
 
