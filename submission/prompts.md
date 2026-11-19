@@ -1,6 +1,11 @@
-# Dùng AI
+# Nhật ký sử dụng Trợ lý AI (Prompts Log)
 
 | # | Ai dùng | Công cụ | Prompt (tóm tắt) | AI sai ở đâu | Nhóm kiểm lại thế nào |
 |---|---|---|---|---|---|
-| 1 | Người thực hiện truy vết seed 3007 | Codex | Đọc ticket và changelog, lọc tier_a, tier_b và notify rồi ghi runs/r3007/trace.json. | Hai lần lọc độc lập cho cùng danh sách. | Codex đối chiếu 2 cảnh trong ticket, box bottle (ID 39) trong labels và guideline, người gán, người kiểm trong jobs.csv. |
-| 2 | Người thực hiện truy vết seed 10007 | Codex | Làm lại truy vết theo ticket của lô r10007 và ghi vào runs/r10007/trace.json. | Kết quả ở dòng 1 thuộc seed 3007 theo yêu cầu trước. | Codex đối chiếu độc lập bằng Python và PowerShell. Cả hai cho cùng danh sách ảnh và người phụ trách từ J02, J03 và J04. |
+| 1 | Hoàng Thuận Thiện (TV7) | Antigravity AI | Hướng dẫn phân rã quy trình 6 pha và xây dựng ma trận phân công 7 thành viên | Gợi ý phân công ban đầu chỉ chia theo mốc thời gian (T+15', T+55') mà chưa theo luồng sự kiện chuyển giao từng bước (Trigger/Handoff) | Yêu cầu AI tái cấu trúc lại thành quy trình 16 bước tác chiến rõ ràng người trước bàn giao cho người sau |
+| 2 | Thành viên 1 (hoangkhiem3523) | Antigravity AI | Viết hàm kiểm tra duplicate_box theo tọa độ YOLO | Ban đầu AI chỉ dùng IoU > 0.5 dẫn đến báo nhầm các cặp vật thể tự nhiên đứng che khuất nhau trong COCO | Sửa lại thuật toán: kiểm tra độ lệch kích thước < 5% và độ lệch tâm chỉ 1-2 pixel theo đúng đặc trưng lỗi gài |
+| 3 | Thành viên 2 (Pviethoang020704) | Antigravity AI | Đọc mã màu RGB của mask PNG để tính segment ID | AI gợi ý dùng thư viện cv2 và PIL (bị cấm theo quy chế lab chỉ dùng thư viện chuẩn) | Yêu cầu AI chuyển sang dùng module pngutil.py thư viện chuẩn có sẵn của giảng viên |
+| 4 | Thành viên 6 (maawongf) | Codex | Đọc ticket và changelog, lọc tier_a, tier_b và notify rồi ghi runs/r3007/trace.json. | Hai lần lọc độc lập cho cùng danh sách. | Codex đối chiếu 2 cảnh trong ticket, box bottle (ID 39) trong labels và guideline, người gán, người kiểm trong jobs.csv. |
+| 5 | Thành viên 6 (maawongf) | Codex | Làm lại truy vết theo ticket của lô r10007 và ghi vào runs/r10007/trace.json. | Kết quả ở dòng 1 thuộc seed 3007 theo yêu cầu trước. | Codex đối chiếu độc lập bằng Python và PowerShell. Cả hai cho cùng danh sách ảnh và người phụ trách từ J02, J03 và J04. |
+| 6 | Hoàng Thuận Thiện (TV7) | Antigravity AI | Setup pipeline kiểm thử đề ẩn 10 và viewer đối chiếu ứng viên | AI chạy vòng lặp đọc pixel chậm khi duyệt toàn bộ ảnh | Nhóm yêu cầu tối ưu thuật toán quét trong bounding box của segment giúp tăng tốc từ 25s xuống 8s |
+| 7 | Thành viên 4 (hungnv0903) | Antigravity AI | Viết script preview_boxes.py vẽ box và mask để 7 thành viên thẩm định mắt trực quan | AI tạo ảnh đơn lẻ thay vì tạo lưới so sánh cạnh nhau giữa nhãn YOLO và Panoptic | Nhóm điều chỉnh vẽ song song hai khung hình và xuất theo từng lô phân công cho 7 thành viên |

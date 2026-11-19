@@ -1,0 +1,379 @@
+{
+  "candidates": [
+    {
+      "image": "img_0008",
+      "type": "class_swap",
+      "note": "IoU=0.68: YOLO='bottle' vs Panoptic='cup'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0011",
+      "type": "class_swap",
+      "note": "IoU=0.89: YOLO='couch' vs Panoptic='chair'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0013",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'chair' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0015",
+      "type": "class_swap",
+      "note": "IoU=0.98: YOLO='cup' vs Panoptic='wine glass'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0017",
+      "type": "class_swap",
+      "note": "IoU=0.42: YOLO='person' vs Panoptic='bed'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0021",
+      "type": "class_swap",
+      "note": "IoU=0.42: YOLO='orange' vs Panoptic='apple'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0025",
+      "type": "class_swap",
+      "note": "IoU=0.97: YOLO='chair' vs Panoptic='couch'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0027",
+      "type": "class_swap",
+      "note": "IoU=0.92: YOLO='couch' vs Panoptic='chair'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0029",
+      "type": "class_swap",
+      "note": "IoU=0.75: YOLO='cup' vs Panoptic='wine glass'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0034",
+      "type": "class_swap",
+      "note": "IoU=0.45: YOLO='person' vs Panoptic='chair'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0038",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'book' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0039",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0040",
+      "type": "class_swap",
+      "note": "IoU=0.48: YOLO='banana' vs Panoptic='dining table'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0043",
+      "type": "class_swap",
+      "note": "IoU=0.98: YOLO='cup' vs Panoptic='bowl'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0048",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'sheep' phủ đồng thời 3 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0053",
+      "type": "class_swap",
+      "note": "IoU=0.99: YOLO='baseball glove' vs Panoptic='person'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0061",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0063",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'sheep' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0065",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'bowl' phủ đồng thời 4 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0068",
+      "type": "class_swap",
+      "note": "IoU=0.42: YOLO='chair' vs Panoptic='person'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0073",
+      "type": "class_swap",
+      "note": "IoU=0.95: YOLO='couch' vs Panoptic='chair'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0075",
+      "type": "class_swap",
+      "note": "IoU=0.61: YOLO='hot dog' vs Panoptic='carrot'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0077",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0082",
+      "type": "class_swap",
+      "note": "IoU=0.43: YOLO='motorcycle' vs Panoptic='person'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0083",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'boat' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0088",
+      "type": "class_swap",
+      "note": "IoU=0.41: YOLO='handbag' vs Panoptic='person'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0089",
+      "type": "class_swap",
+      "note": "IoU=0.45: YOLO='person' vs Panoptic='skis'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0090",
+      "type": "bbox_drift",
+      "note": "Cùng lớp 'person' nhưng IoU thấp (0.64). Hộp detection có thể bị lệch."
+    },
+    {
+      "image": "img_0091",
+      "type": "class_swap",
+      "note": "IoU=1.00: YOLO='donut' vs Panoptic='cake'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0093",
+      "type": "class_swap",
+      "note": "IoU=0.47: YOLO='bicycle' vs Panoptic='person'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0094",
+      "type": "class_swap",
+      "note": "IoU=0.97: YOLO='car' vs Panoptic='truck'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0095",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0096",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'book' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0101",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0102",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0105",
+      "type": "class_swap",
+      "note": "IoU=0.91: YOLO='cup' vs Panoptic='wine glass'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0106",
+      "type": "class_swap",
+      "note": "IoU=0.47: YOLO='person' vs Panoptic='bench'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0111",
+      "type": "class_swap",
+      "note": "IoU=0.47: YOLO='cat' vs Panoptic='bed'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0112",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'bottle' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0114",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'teddy bear' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0122",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0125",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'bicycle' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0130",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0139",
+      "type": "class_swap",
+      "note": "IoU=0.91: YOLO='couch' vs Panoptic='chair'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0146",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0148",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0161",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'pizza' phủ đồng thời 3 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0163",
+      "type": "class_swap",
+      "note": "IoU=0.73: YOLO='banana' vs Panoptic='bowl'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0169",
+      "type": "class_swap",
+      "note": "IoU=0.81: YOLO='backpack' vs Panoptic='handbag'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0171",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0173",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'elephant' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0174",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'book' phủ đồng thời 3 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0179",
+      "type": "missing_box",
+      "note": "Panoptic có 2 'chair' nhưng YOLO chỉ có 1."
+    },
+    {
+      "image": "img_0180",
+      "type": "class_swap",
+      "note": "IoU=0.62: YOLO='bed' vs Panoptic='person'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0181",
+      "type": "class_swap",
+      "note": "IoU=0.46: YOLO='pizza' vs Panoptic='dining table'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0182",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0183",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'bear' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0186",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0187",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'zebra' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0195",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0196",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'banana' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0197",
+      "type": "class_swap",
+      "note": "IoU=0.96: YOLO='couch' vs Panoptic='chair'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0199",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0202",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0204",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'carrot' phủ đồng thời 3 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0205",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0212",
+      "type": "class_swap",
+      "note": "IoU=0.69: YOLO='truck' vs Panoptic='car'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0217",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'chair' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0220",
+      "type": "class_swap",
+      "note": "IoU=0.48: YOLO='umbrella' vs Panoptic='person'. Cần mở ảnh xác định nguồn sai."
+    },
+    {
+      "image": "img_0233",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'sheep' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0236",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0239",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'bird' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0240",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'sheep' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0241",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'car' phủ đồng thời 2 box YOLO cùng lớp."
+    },
+    {
+      "image": "img_0246",
+      "type": "instance_merge",
+      "note": "Segment panoptic 'person' phủ đồng thời 2 box YOLO cùng lớp."
+    }
+  ]
+}

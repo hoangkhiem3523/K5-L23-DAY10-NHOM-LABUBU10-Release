@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch 7 Image Reviewer — Thành viên 7 (Seed 10007)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #0f172a; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 flex flex-col justify-between p-4 sm:p-6">
+  
+  <header class="max-w-6xl w-full mx-auto flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+    <div class="flex items-center space-x-3">
+      <span class="text-xs font-bold uppercase tracking-wider text-rose-700 font-mono bg-rose-50 px-2 py-1 rounded border border-rose-200">BATCH 7 &bull; TV 7</span>
+      <span class="text-slate-300">|</span>
+      <span class="text-xs font-semibold text-slate-600 font-mono">DẢI ẢNH: 0216 &rarr; 0250 (35 ẢNH) &bull; SEED 10007</span>
+    </div>
+    <div class="text-xs font-mono font-bold text-slate-700">
+      Ảnh <span id="curIdxText" class="text-rose-700 text-sm font-extrabold">1</span> / 35
+    </div>
+  </header>
+
+  <main class="max-w-6xl w-full mx-auto flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <!-- IMAGE & CANVAS AREA -->
+    <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col items-center">
+      <div class="relative max-w-full overflow-hidden rounded-lg border border-slate-100 bg-slate-900/5 flex items-center justify-center min-h-[420px] w-full">
+        <canvas id="imgCanvas" class="max-w-full max-h-[520px] object-contain rounded"></canvas>
+      </div>
+      <div class="flex items-center justify-between w-full mt-3 text-xs font-mono text-slate-500">
+        <span id="stemText">000000022589.jpg</span>
+        <label class="flex items-center space-x-2 cursor-pointer">
+          <input type="checkbox" id="toggleBoxes" checked onchange="drawCurrent()" class="rounded text-rose-600 focus:ring-rose-500">
+          <span>Hiện Bounding Box YOLO</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- REVIEW CONTROLS & NOTES -->
+    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
+      <div>
+        <span class="text-xs font-bold text-rose-700 font-mono uppercase">BẢNG THẨM ĐỊNH MẮT (PHA 2)</span>
+        <h2 id="boxCountText" class="text-base font-bold text-slate-900 mt-0.5">Phát hiện 0 đối tượng</h2>
+        <div id="classList" class="mt-2 flex flex-wrap gap-1 text-[11px] font-mono"></div>
+      </div>
+
+      <div class="border-t border-slate-100 pt-3 space-y-3">
+        <div>
+          <label class="text-xs font-bold text-slate-700 font-mono">Kết luận (Verdict):</label>
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            <button onclick="setVerdict('confirmed')" id="btnConfirmed" class="py-2 px-3 text-xs font-bold rounded-lg border border-slate-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 transition flex items-center justify-center gap-1 font-mono">
+              <span>⚠️ Confirmed (Có lỗi)</span>
+            </button>
+            <button onclick="setVerdict('rejected')" id="btnRejected" class="py-2 px-3 text-xs font-bold rounded-lg border border-slate-300 hover:bg-slate-100 transition flex items-center justify-center gap-1 font-mono">
+              <span>✅ Rejected (Bình thường)</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-slate-700 font-mono">Ghi chú (bắt buộc &ge; 20 ký tự nếu có lỗi):</label>
+          <textarea id="noteInput" rows="3" placeholder="Mô tả chi tiết những gì mắt nhìn thấy trên ảnh..." class="w-full mt-1 p-2.5 text-xs rounded-lg border border-slate-200 focus:ring-2 focus:ring-rose-500 font-sans"></textarea>
+          <div class="text-[11px] text-slate-400 font-mono mt-0.5 flex justify-between">
+            <span>Độ dài: <span id="charCount" class="font-bold text-slate-600">0</span> ký tự</span>
+            <span id="charWarn" class="text-amber-600 hidden">&lt; 20 ký tự</span>
+          </div>
+        </div>
+
+        <button onclick="saveCurrentNote()" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono text-xs font-bold rounded-lg transition shadow">
+          💾 Lưu Ghi Chú Ảnh Này
+        </button>
+      </div>
+
+      <!-- NAVIGATION -->
+      <div class="border-t border-slate-100 pt-3 flex items-center justify-between gap-2">
+        <button onclick="prevImage()" class="flex-1 py-2 px-3 text-xs font-bold rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 transition font-mono">
+          &larr; Ảnh Trước
+        </button>
+        <button onclick="nextImage()" class="flex-1 py-2 px-3 text-xs font-bold rounded-lg bg-rose-700 hover:bg-rose-800 text-white transition font-mono">
+          Ảnh Sau &rarr;
+        </button>
+      </div>
+      
+      <button onclick="exportCSV()" class="w-full py-2 text-xs font-bold font-mono rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-50 transition">
+        📥 Xuất File review_batch7.csv
+      </button>
+    </div>
+  </main>
+
+  <script>
+    const items = [{"index": 216, "stem": "000000022589", "image_url": "runs/r10007/delivery/images/000000022589.jpg", "boxes": [{"class_id": 18, "class_name": "sheep", "x": 0.425703, "y": 0.580115, "w": 0.281656, "h": 0.268229}, {"class_id": 18, "class_name": "sheep", "x": 0.477516, "y": 0.76175, "w": 0.955031, "h": 0.474833}]}, {"index": 217, "stem": "000000022623", "image_url": "runs/r10007/delivery/images/000000022623.jpg", "boxes": [{"class_id": 67, "class_name": "cell phone", "x": 0.50282, "y": 0.470375, "w": 0.992109, "h": 0.94075}]}, {"index": 218, "stem": "000000022705", "image_url": "runs/r10007/delivery/images/000000022705.jpg", "boxes": [{"class_id": 39, "class_name": "bottle", "x": 0.19444, "y": 0.383688, "w": 0.05, "h": 0.1025}, {"class_id": 72, "class_name": "refrigerator", "x": 0.549025, "y": 0.464195, "w": 0.53112, "h": 0.779766}, {"class_id": 0, "class_name": "person", "x": 0.525467, "y": 0.540625, "w": 0.455498, "h": 0.820625}, {"class_id": 40, "class_name": "wine glass", "x": 0.398299, "y": 0.39375, "w": 0.052158, "h": 0.128688}, {"class_id": 45, "class_name": "bowl", "x": 0.081079, "y": 0.420211, "w": 0.065519, "h": 0.037422}]}, {"index": 219, "stem": "000000022755", "image_url": "runs/r10007/delivery/images/000000022755.jpg", "boxes": [{"class_id": 2, "class_name": "car", "x": 0.611977, "y": 0.503132, "w": 0.090953, "h": 0.053612}, {"class_id": 2, "class_name": "car", "x": 0.702273, "y": 0.477129, "w": 0.025484, "h": 0.015762}, {"class_id": 2, "class_name": "car", "x": 0.642375, "y": 0.487766, "w": 0.038969, "h": 0.021127}, {"class_id": 5, "class_name": "bus", "x": 0.478227, "y": 0.54286, "w": 0.217734, "h": 0.296117}]}, {"index": 220, "stem": "000000022892", "image_url": "runs/r10007/delivery/images/000000022892.jpg", "boxes": [{"class_id": 80, "class_name": "80", "x": 0.32459, "y": 0.556527, "w": 0.5067, "h": 0.657964}, {"class_id": 58, "class_name": "potted plant", "x": 0.65371, "y": 0.822066, "w": 0.49798, "h": 0.337844}, {"class_id": 15, "class_name": "cat", "x": 0.73695, "y": 0.415464, "w": 0.5229, "h": 0.690329}, {"class_id": 60, "class_name": "dining table", "x": 0.8473, "y": 0.837455, "w": 0.3054, "h": 0.302096}, {"class_id": 56, "class_name": "chair", "x": 0.8141, "y": 0.388608, "w": 0.3718, "h": 0.777216}]}, {"index": 221, "stem": "000000022935", "image_url": "runs/r10007/delivery/images/000000022935.jpg", "boxes": [{"class_id": 32, "class_name": "sports ball", "x": 0.185602, "y": 0.55125, "w": 0.217141, "h": 0.2905}, {"class_id": 0, "class_name": "person", "x": 0.37332, "y": 0.512521, "w": 0.682891, "h": 0.948542}, {"class_id": 0, "class_name": "person", "x": 0.825844, "y": 0.521354, "w": 0.330344, "h": 0.934833}]}, {"index": 222, "stem": "000000022969", "image_url": "runs/r10007/delivery/images/000000022969.jpg", "boxes": [{"class_id": 23, "class_name": "giraffe", "x": 0.69101, "y": 0.456173, "w": 0.10786, "h": 0.512347}, {"class_id": 23, "class_name": "giraffe", "x": 0.24254, "y": 0.62928, "w": 0.2238, "h": 0.266613}]}, {"index": 223, "stem": "000000023023", "image_url": "runs/r10007/delivery/images/000000023023.jpg", "boxes": [{"class_id": 26, "class_name": "handbag", "x": 0.801797, "y": 0.527026, "w": 0.274771, "h": 0.295033}, {"class_id": 28, "class_name": "suitcase", "x": 0.503366, "y": 0.483145, "w": 0.332582, "h": 0.422467}]}, {"index": 224, "stem": "000000023034", "image_url": "runs/r10007/delivery/images/000000023034.jpg", "boxes": [{"class_id": 17, "class_name": "horse", "x": 0.434031, "y": 0.653759, "w": 0.076031, "h": 0.305363}, {"class_id": 0, "class_name": "person", "x": 0.827852, "y": 0.494625, "w": 0.344297, "h": 0.989251}, {"class_id": 0, "class_name": "person", "x": 0.43143, "y": 0.484204, "w": 0.133828, "h": 0.281569}, {"class_id": 17, "class_name": "horse", "x": 0.526773, "y": 0.536323, "w": 0.118797, "h": 0.221967}, {"class_id": 24, "class_name": "backpack", "x": 0.905508, "y": 0.520129, "w": 0.188984, "h": 0.394824}]}, {"index": 225, "stem": "000000023126", "image_url": "runs/r10007/delivery/images/000000023126.jpg", "boxes": [{"class_id": 17, "class_name": "horse", "x": 0.382344, "y": 0.825584, "w": 0.764687, "h": 0.348832}, {"class_id": 0, "class_name": "person", "x": 0.348039, "y": 0.424731, "w": 0.175453, "h": 0.780631}, {"class_id": 17, "class_name": "horse", "x": 0.753859, "y": 0.838026, "w": 0.079156, "h": 0.253341}]}, {"index": 226, "stem": "000000023230", "image_url": "runs/r10007/delivery/images/000000023230.jpg", "boxes": [{"class_id": 14, "class_name": "bird", "x": 0.527617, "y": 0.553281, "w": 0.080547, "h": 0.047771}, {"class_id": 14, "class_name": "bird", "x": 0.604797, "y": 0.545604, "w": 0.084719, "h": 0.057667}, {"class_id": 14, "class_name": "bird", "x": 0.196914, "y": 0.473031, "w": 0.068328, "h": 0.044271}, {"class_id": 14, "class_name": "bird", "x": 0.032711, "y": 0.497135, "w": 0.051547, "h": 0.018062}]}, {"index": 227, "stem": "000000023272", "image_url": "runs/r10007/delivery/images/000000023272.jpg", "boxes": [{"class_id": 15, "class_name": "cat", "x": 0.49839, "y": 0.29248, "w": 0.25162, "h": 0.193547}, {"class_id": 2, "class_name": "car", "x": 0.49946, "y": 0.494853, "w": 0.99892, "h": 0.98928}]}, {"index": 228, "stem": "000000023359", "image_url": "runs/r10007/delivery/images/000000023359.jpg", "boxes": [{"class_id": 0, "class_name": "person", "x": 0.466328, "y": 0.414801, "w": 0.158938, "h": 0.399089}, {"class_id": 31, "class_name": "snowboard", "x": 0.44182, "y": 0.543143, "w": 0.054078, "h": 0.278341}]}, {"index": 229, "stem": "000000023666", "image_url": "runs/r10007/delivery/images/000000023666.jpg", "boxes": [{"class_id": 61, "class_name": "toilet", "x": 0.454219, "y": 0.850297, "w": 0.242688, "h": 0.231469}]}, {"index": 230, "stem": "000000023751", "image_url": "runs/r10007/delivery/images/000000023751.jpg", "boxes": [{"class_id": 33, "class_name": "kite", "x": 0.555302, "y": 0.231711, "w": 0.238, "h": 0.114141}]}, {"index": 231, "stem": "000000023781", "image_url": "runs/r10007/delivery/images/000000023781.jpg", "boxes": [{"class_id": 50, "class_name": "broccoli", "x": 0.310102, "y": 0.443899, "w": 0.382141, "h": 0.323958}, {"class_id": 51, "class_name": "carrot", "x": 0.679937, "y": 0.803864, "w": 0.180125, "h": 0.141686}, {"class_id": 51, "class_name": "carrot", "x": 0.830445, "y": 0.891768, "w": 0.156984, "h": 0.192951}, {"class_id": 51, "class_name": "carrot", "x": 0.623617, "y": 0.729133, "w": 0.191516, "h": 0.121405}, {"class_id": 51, "class_name": "carrot", "x": 0.673469, "y": 0.918829, "w": 0.160125, "h": 0.138829}, {"class_id": 51, "class_name": "carrot", "x": 0.703625, "y": 0.67281, "w": 0.077344, "h": 0.083513}, {"class_id": 51, "class_name": "carrot", "x": 0.783477, "y": 0.946944, "w": 0.055422, "h": 0.105597}]}, {"index": 232, "stem": "000000023899", "image_url": "runs/r10007/delivery/images/000000023899.jpg", "boxes": [{"class_id": 0, "class_name": "person", "x": 0.479383, "y": 0.531459, "w": 0.952797, "h": 0.910118}, {"class_id": 0, "class_name": "person", "x": 0.478273, "y": 0.577529, "w": 0.285016, "h": 0.471906}, {"class_id": 0, "class_name": "person", "x": 0.87232, "y": 0.535953, "w": 0.255359, "h": 0.564047}, {"class_id": 65, "class_name": "remote", "x": 0.707711, "y": 0.701435, "w": 0.033672, "h": 0.039153}, {"class_id": 65, "class_name": "remote", "x": 0.889891, "y": 0.859918, "w": 0.090094, "h": 0.128824}, {"class_id": 57, "class_name": "couch", "x": 0.742406, "y": 0.530776, "w": 0.416344, "h": 0.483153}, {"class_id": 65, "class_name": "remote", "x": 0.352555, "y": 0.305024, "w": 0.083109, "h": 0.039506}, {"class_id": 65, "class_name": "remote", "x": 0.800539, "y": 0.751788, "w": 0.047547, "h": 0.049976}, {"class_id": 65, "class_name": "remote", "x": 0.969891, "y": 0.586047, "w": 0.041531, "h": 0.037882}]}, {"index": 233, "stem": "000000023937", "image_url": "runs/r10007/delivery/images/000000023937.jpg", "boxes": [{"class_id": 19, "class_name": "cow", "x": 0.538484, "y": 0.289229, "w": 0.193031, "h": 0.090701}, {"class_id": 19, "class_name": "cow", "x": 0.316344, "y": 0.292138, "w": 0.235937, "h": 0.11236}, {"class_id": 18, "class_name": "sheep", "x": 0.704148, "y": 0.514533, "w": 0.169672, "h": 0.177944}, {"class_id": 19, "class_name": "cow", "x": 0.612805, "y": 0.293283, "w": 0.209891, "h": 0.071986}, {"class_id": 19, "class_name": "cow", "x": 0.402102, "y": 0.546624, "w": 0.203047, "h": 0.126986}, {"class_id": 19, "class_name": "cow", "x": 0.702367, "y": 0.495479, "w": 0.170109, "h": 0.102874}]}, {"index": 234, "stem": "000000024021", "image_url": "runs/r10007/delivery/images/000000024021.jpg", "boxes": [{"class_id": 0, "class_name": "person", "x": 0.49393, "y": 0.719551, "w": 0.093953, "h": 0.225359}, {"class_id": 0, "class_name": "person", "x": 0.561039, "y": 0.725692, "w": 0.096734, "h": 0.254256}, {"class_id": 0, "class_name": "person", "x": 0.984195, "y": 0.226974, "w": 0.031609, "h": 0.136923}, {"class_id": 0, "class_name": "person", "x": 0.762523, "y": 0.738103, "w": 0.103016, "h": 0.259436}, {"class_id": 0, "class_name": "person", "x": 0.681063, "y": 0.736474, "w": 0.100375, "h": 0.254128}, {"class_id": 0, "class_name": "person", "x": 0.866219, "y": 0.587205, "w": 0.037156, "h": 0.086667}, {"class_id": 0, "class_name": "person", "x": 0.953531, "y": 0.521244, "w": 0.08875, "h": 0.212333}, {"class_id": 0, "class_name": "person", "x": 0.836086, "y": 0.207628, "w": 0.051266, "h": 0.153564}, {"class_id": 0, "class_name": "person", "x": 0.599758, "y": 0.425051, "w": 0.055453, "h": 0.177487}, {"class_id": 0, "class_name": "person", "x": 0.560758, "y": 0.431667, "w": 0.096609, "h": 0.181385}, {"class_id": 0, "class_name": "person", "x": 0.431555, "y": 0.501051, "w": 0.065953, "h": 0.172}, {"class_id": 0, "class_name": "person", "x": 0.305195, "y": 0.448282, "w": 0.078422, "h": 0.228308}, {"class_id": 27, "class_name": "tie", "x": 0.285172, "y": 0.673974, "w": 0.010906, "h": 0.053231}, {"class_id": 27, "class_name": "tie", "x": 0.365125, "y": 0.664321, "w": 0.012063, "h": 0.042846}, {"class_id": 27, "class_name": "tie", "x": 0.37243, "y": 0.533346, "w": 0.011828, "h": 0.049154}, {"class_id": 27, "class_name": "tie", "x": 0.554953, "y": 0.715244, "w": 0.012594, "h": 0.052179}, {"class_id": 27, "class_name": "tie", "x": 0.830922, "y": 0.706551, "w": 0.016969, "h": 0.047821}, {"class_id": 27, "class_name": "tie", "x": 0.709586, "y": 0.543359, "w": 0.010109, "h": 0.071179}, {"class_id": 27, "class_name": "tie", "x": 0.595461, "y": 0.409526, "w": 0.007422, "h": 0.014795}, {"class_id": 27, "class_name": "tie", "x": 0.771727, "y": 0.730897, "w": 0.026297, "h": 0.050205}, {"class_id": 27, "class_name": "tie", "x": 0.940586, "y": 0.661013, "w": 0.005922, "h": 0.027564}, {"class_id": 27, "class_name": "tie", "x": 0.054914, "y": 0.529526, "w": 0.010578, "h": 0.026282}, {"class_id": 27, "class_name": "tie", "x": 0.111727, "y": 0.538, "w": 0.008359, "h": 0.028923}, {"class_id": 27, "class_name": "tie", "x": 0.650047, "y": 0.526487, "w": 0.007281, "h": 0.034308}, {"class_id": 0, "class_name": "person", "x": 0.558, "y": 0.520949, "w": 0.056125, "h": 0.185077}, {"class_id": 27, "class_name": "tie", "x": 0.477211, "y": 0.435064, "w": 0.011078, "h": 0.044179}]}, {"index": 235, "stem": "000000024027", "image_url": "runs/r10007/delivery/images/000000024027.jpg", "boxes": [{"class_id": 33, "class_name": "kite", "x": 0.66385, "y": 0.342347, "w": 0.45946, "h": 0.40992}, {"class_id": 0, "class_name": "person", "x": 0.51105, "y": 0.977227, "w": 0.0241, "h": 0.045547}, {"class_id": 0, "class_name": "person", "x": 0.22216, "y": 0.974307, "w": 0.01856, "h": 0.050587}]}, {"index": 236, "stem": "000000024144", "image_url": "runs/r10007/delivery/images/000000024144.jpg", "boxes": [{"class_id": 53, "class_name": "pizza", "x": 0.492102, "y": 0.497688, "w": 0.770578, "h": 0.896958}]}, {"index": 237, "stem": "000000024243", "image_url": "runs/r10007/delivery/images/000000024243.jpg", "boxes": [{"class_id": 0, "class_name": "person", "x": 0.547367, "y": 0.380385, "w": 0.123703, "h": 0.555729}, {"class_id": 0, "class_name": "person", "x": 0.272648, "y": 0.556146, "w": 0.414422, "h": 0.861292}, {"class_id": 0, "class_name": "person", "x": 0.872734, "y": 0.156365, "w": 0.006531, "h": 0.021479}, {"class_id": 0, "class_name": "person", "x": 0.889617, "y": 0.168917, "w": 0.014359, "h": 0.057458}, {"class_id": 0, "class_name": "person", "x": 0.839469, "y": 0.154635, "w": 0.012219, "h": 0.032021}, {"class_id": 72, "class_name": "refrigerator", "x": 0.634227, "y": 0.364875, "w": 0.416109, "h": 0.689042}, {"class_id": 41, "class_name": "cup", "x": 0.022508, "y": 0.682979, "w": 0.044891, "h": 0.081833}, {"class_id": 41, "class_name": "cup", "x": 0.071117, "y": 0.628104, "w": 0.048016, "h": 0.108208}, {"class_id": 0, "class_name": "person", "x": 0.912641, "y": 0.165688, "w": 0.009594, "h": 0.045125}, {"class_id": 0, "class_name": "person", "x": 0.985016, "y": 0.170104, "w": 0.011469, "h": 0.050542}, {"class_id": 0, "class_name": "person", "x": 0.932477, "y": 0.162937, "w": 0.016953, "h": 0.035833}, {"class_id": 0, "class_name": "person", "x": 0.983195, "y": 0.421906, "w": 0.031922, "h": 0.471813}, {"class_id": 0, "class_name": "person", "x": 0.903039, "y": 0.165417, "w": 0.010078, "h": 0.050292}, {"class_id": 0, "class_name": "person", "x": 0.866703, "y": 0.147396, "w": 0.010562, "h": 0.017792}, {"class_id": 41, "class_name": "cup", "x": 0.017953, "y": 0.70351, "w": 0.035906, "h": 0.088188}, {"class_id": 41, "class_name": "cup", "x": 0.466094, "y": 0.374969, "w": 0.024875, "h": 0.053979}, {"class_id": 0, "class_name": "person", "x": 0.852031, "y": 0.151781, "w": 0.013344, "h": 0.027187}, {"class_id": 0, "class_name": "person", "x": 0.945453, "y": 0.157927, "w": 0.011, "h": 0.014521}]}, {"index": 238, "stem": "000000024567", "image_url": "runs/r10007/delivery/images/000000024567.jpg", "boxes": [{"class_id": 56, "class_name": "chair", "x": 0.864865, "y": 0.698203, "w": 0.264271, "h": 0.439187}, {"class_id": 0, "class_name": "person", "x": 0.438479, "y": 0.372594, "w": 0.876958, "h": 0.745188}, {"class_id": 52, "class_name": "hot dog", "x": 0.177073, "y": 0.693742, "w": 0.169313, "h": 0.198172}, {"class_id": 52, "class_name": "hot dog", "x": 0.402677, "y": 0.670539, "w": 0.301521, "h": 0.135578}, {"class_id": 52, "class_name": "hot dog", "x": 0.572552, "y": 0.769414, "w": 0.367063, "h": 0.174109}, {"class_id": 52, "class_name": "hot dog", "x": 0.263531, "y": 0.815297, "w": 0.313729, "h": 0.167063}, {"class_id": 52, "class_name": "hot dog", "x": 0.463698, "y": 0.867906, "w": 0.352854, "h": 0.086656}, {"class_id": 52, "class_name": "hot dog", "x": 0.72775, "y": 0.90857, "w": 0.270583, "h": 0.182859}, {"class_id": 52, "class_name": "hot dog", "x": 0.411083, "y": 0.954664, "w": 0.401125, "h": 0.088797}]}, {"index": 239, "stem": "000000024610", "image_url": "runs/r10007/delivery/images/000000024610.jpg", "boxes": [{"class_id": 56, "class_name": "chair", "x": 0.225, "y": 0.795698, "w": 0.240313, "h": 0.408604}, {"class_id": 57, "class_name": "couch", "x": 0.856492, "y": 0.808156, "w": 0.287016, "h": 0.356229}, {"class_id": 63, "class_name": "laptop", "x": 0.132344, "y": 0.591333, "w": 0.188844, "h": 0.154208}, {"class_id": 73, "class_name": "book", "x": 0.587703, "y": 0.71125, "w": 0.151969, "h": 0.085333}, {"class_id": 73, "class_name": "book", "x": 0.59943, "y": 0.839573, "w": 0.016891, "h": 0.090146}, {"class_id": 73, "class_name": "book", "x": 0.589094, "y": 0.825635, "w": 0.148594, "h": 0.117104}, {"class_id": 73, "class_name": "book", "x": 0.433438, "y": 0.727625, "w": 0.033156, "h": 0.092208}, {"class_id": 73, "class_name": "book", "x": 0.498336, "y": 0.73324, "w": 0.022391, "h": 0.089521}, {"class_id": 73, "class_name": "book", "x": 0.36557, "y": 0.726094, "w": 0.018453, "h": 0.108021}, {"class_id": 73, "class_name": "book", "x": 0.390961, "y": 0.730135, "w": 0.006234, "h": 0.084938}, {"class_id": 73, "class_name": "book", "x": 0.47057, "y": 0.862094, "w": 0.073547, "h": 0.031354}, {"class_id": 24, "class_name": "backpack", "x": 0.882, "y": 0.735344, "w": 0.139375, "h": 0.212271}, {"class_id": 39, "class_name": "bottle", "x": 0.036367, "y": 0.612833, "w": 0.036359, "h": 0.1365}, {"class_id": 56, "class_name": "chair", "x": 0.014289, "y": 0.842021, "w": 0.017078, "h": 0.071583}, {"class_id": 56, "class_name": "chair", "x": 0.003063, "y": 0.844792, "w": 0.004625, "h": 0.081}, {"class_id": 73, "class_name": "book", "x": 0.046266, "y": 0.70051, "w": 0.092531, "h": 0.054021}]}, {"index": 240, "stem": "000000024919", "image_url": "runs/r10007/delivery/images/000000024919.jpg", "boxes": [{"class_id": 20, "class_name": "elephant", "x": 0.633953, "y": 0.493694, "w": 0.353469, "h": 0.354024}, {"class_id": 20, "class_name": "elephant", "x": 0.355852, "y": 0.525412, "w": 0.354359, "h": 0.349788}]}, {"index": 241, "stem": "000000025057", "image_url": "runs/r10007/delivery/images/000000025057.jpg", "boxes": [{"class_id": 39, "class_name": "bottle", "x": 0.652945, "y": 0.317178, "w": 0.025672, "h": 0.115808}, {"class_id": 29, "class_name": "frisbee", "x": 0.589219, "y": 0.390328, "w": 0.140937, "h": 0.175269}, {"class_id": 0, "class_name": "person", "x": 0.187453, "y": 0.667447, "w": 0.071469, "h": 0.189742}, {"class_id": 0, "class_name": "person", "x": 0.435063, "y": 0.50233, "w": 0.470156, "h": 0.975386}]}, {"index": 242, "stem": "000000025096", "image_url": "runs/r10007/delivery/images/000000025096.jpg", "boxes": [{"class_id": 0, "class_name": "person", "x": 0.28464, "y": 0.36517, "w": 0.563307, "h": 0.58202}, {"class_id": 43, "class_name": "knife", "x": 0.2444, "y": 0.69666, "w": 0.279147, "h": 0.15092}, {"class_id": 22, "class_name": "zebra", "x": 0.664413, "y": 0.97105, "w": 0.133413, "h": 0.0579}, {"class_id": 36, "class_name": "skateboard", "x": 0.569947, "y": 0.68695, "w": 0.600053, "h": 0.2649}, {"class_id": 56, "class_name": "chair", "x": 0.044053, "y": 0.46582, "w": 0.088107, "h": 0.07888}, {"class_id": 60, "class_name": "dining table", "x": 0.5, "y": 0.73268, "w": 1.0, "h": 0.53464}]}, {"index": 243, "stem": "000000025139", "image_url": "runs/r10007/delivery/images/000000025139.jpg", "boxes": [{"class_id": 22, "class_name": "zebra", "x": 0.34163, "y": 0.495434, "w": 0.68326, "h": 0.977156}, {"class_id": 22, "class_name": "zebra", "x": 0.77232, "y": 0.414611, "w": 0.28972, "h": 0.658443}]}, {"index": 244, "stem": "000000025181", "image_url": "runs/r10007/delivery/images/000000025181.jpg", "boxes": [{"class_id": 6, "class_name": "train", "x": 0.778367, "y": 0.519239, "w": 0.443266, "h": 0.371358}, {"class_id": 0, "class_name": "person", "x": 0.162305, "y": 0.55863, "w": 0.019297, "h": 0.048642}, {"class_id": 13, "class_name": "bench", "x": 0.064023, "y": 0.589344, "w": 0.048578, "h": 0.031522}, {"class_id": 13, "class_name": "bench", "x": 0.152062, "y": 0.576569, "w": 0.024094, "h": 0.018712}, {"class_id": 24, "class_name": "backpack", "x": 0.084852, "y": 0.589778, "w": 0.012078, "h": 0.024286}, {"class_id": 0, "class_name": "person", "x": 0.092828, "y": 0.559977, "w": 0.022219, "h": 0.083841}, {"class_id": 0, "class_name": "person", "x": 0.166906, "y": 0.551721, "w": 0.007469, "h": 0.021054}, {"class_id": 13, "class_name": "bench", "x": 0.289711, "y": 0.554403, "w": 0.006766, "h": 0.018501}, {"class_id": 13, "class_name": "bench", "x": 0.308578, "y": 0.553548, "w": 0.006656, "h": 0.017916}]}, {"index": 245, "stem": "000000025228", "image_url": "runs/r10007/delivery/images/000000025228.jpg", "boxes": [{"class_id": 0, "class_name": "person", "x": 0.488258, "y": 0.656319, "w": 0.441359, "h": 0.604977}, {"class_id": 37, "class_name": "surfboard", "x": 0.523156, "y": 0.91031, "w": 0.594187, "h": 0.152454}]}, {"index": 246, "stem": "000000025386", "image_url": "runs/r10007/delivery/images/000000025386.jpg", "boxes": [{"class_id": 0, "class_name": "person", "x": 0.604461, "y": 0.459344, "w": 0.444707, "h": 0.545063}, {"class_id": 0, "class_name": "person", "x": 0.347131, "y": 0.585484, "w": 0.694262, "h": 0.828156}, {"class_id": 0, "class_name": "person", "x": 0.725035, "y": 0.180438, "w": 0.027728, "h": 0.0435}, {"class_id": 56, "class_name": "chair", "x": 0.913349, "y": 0.702469, "w": 0.173302, "h": 0.595062}, {"class_id": 56, "class_name": "chair", "x": 0.095785, "y": 0.342555, "w": 0.188806, "h": 0.170016}, {"class_id": 56, "class_name": "chair", "x": 0.162014, "y": 0.906492, "w": 0.324028, "h": 0.187016}, {"class_id": 48, "class_name": "sandwich", "x": 0.736546, "y": 0.52475, "w": 0.092763, "h": 0.066219}, {"class_id": 52, "class_name": "hot dog", "x": 0.637986, "y": 0.654414, "w": 0.092974, "h": 0.065203}]}, {"index": 247, "stem": "000000025393", "image_url": "runs/r10007/delivery/images/000000025393.jpg", "boxes": [{"class_id": 27, "class_name": "tie", "x": 0.690164, "y": 0.524729, "w": 0.035391, "h": 0.2}, {"class_id": 27, "class_name": "tie", "x": 0.337805, "y": 0.414604, "w": 0.044234, "h": 0.248083}, {"class_id": 0, "class_name": "person", "x": 0.339984, "y": 0.570917, "w": 0.2145, "h": 0.835542}, {"class_id": 2, "class_name": "car", "x": 0.03557, "y": 0.455135, "w": 0.071141, "h": 0.073146}, {"class_id": 2, "class_name": "car", "x": 0.069922, "y": 0.456531, "w": 0.078, "h": 0.087938}, {"class_id": 2, "class_name": "car", "x": 0.130328, "y": 0.452771, "w": 0.046125, "h": 0.074125}, {"class_id": 2, "class_name": "car", "x": 0.173273, "y": 0.435979, "w": 0.044859, "h": 0.058708}, {"class_id": 0, "class_name": "person", "x": 0.160711, "y": 0.447146, "w": 0.039859, "h": 0.126958}, {"class_id": 0, "class_name": "person", "x": 0.676641, "y": 0.640188, "w": 0.193281, "h": 0.712708}]}, {"index": 248, "stem": "000000025394", "image_url": "runs/r10007/delivery/images/000000025394.jpg", "boxes": [{"class_id": 0, "class_name": "person", "x": 0.343573, "y": 0.535789, "w": 0.512188, "h": 0.654359}, {"class_id": 40, "class_name": "wine glass", "x": 0.80651, "y": 0.76918, "w": 0.133021, "h": 0.258234}, {"class_id": 40, "class_name": "wine glass", "x": 0.692969, "y": 0.441563, "w": 0.022062, "h": 0.039656}, {"class_id": 39, "class_name": "bottle", "x": 0.489125, "y": 0.6275, "w": 0.090667, "h": 0.089469}, {"class_id": 39, "class_name": "bottle", "x": 0.13274, "y": 0.040672, "w": 0.050646, "h": 0.079094}, {"class_id": 39, "class_name": "bottle", "x": 0.195042, "y": 0.046352, "w": 0.038167, "h": 0.087672}, {"class_id": 39, "class_name": "bottle", "x": 0.581052, "y": 0.095211, "w": 0.063604, "h": 0.136141}, {"class_id": 39, "class_name": "bottle", "x": 0.32449, "y": 0.048281, "w": 0.034229, "h": 0.096562}, {"class_id": 39, "class_name": "bottle", "x": 0.287073, "y": 0.067258, "w": 0.034521, "h": 0.077984}, {"class_id": 39, "class_name": "bottle", "x": 0.669802, "y": 0.140703, "w": 0.039729, "h": 0.070438}, {"class_id": 39, "class_name": "bottle", "x": 0.706948, "y": 0.146773, "w": 0.028646, "h": 0.070734}, {"class_id": 39, "class_name": "bottle", "x": 0.118594, "y": 0.237047, "w": 0.062104, "h": 0.027125}, {"class_id": 39, "class_name": "bottle", "x": 0.372229, "y": 0.037906, "w": 0.025833, "h": 0.053281}, {"class_id": 39, "class_name": "bottle", "x": 0.724354, "y": 0.151797, "w": 0.021375, "h": 0.064031}, {"class_id": 40, "class_name": "wine glass", "x": 0.732802, "y": 0.437422, "w": 0.030271, "h": 0.050187}, {"class_id": 40, "class_name": "wine glass", "x": 0.772437, "y": 0.432156, "w": 0.019917, "h": 0.051531}, {"class_id": 40, "class_name": "wine glass", "x": 0.753229, "y": 0.429992, "w": 0.021958, "h": 0.029953}, {"class_id": 41, "class_name": "cup", "x": 0.645687, "y": 0.833016, "w": 0.272667, "h": 0.296625}, {"class_id": 0, "class_name": "person", "x": 0.881875, "y": 0.807461, "w": 0.23625, "h": 0.122641}, {"class_id": 39, "class_name": "bottle", "x": 0.505208, "y": 0.090391, "w": 0.035792, "h": 0.112344}, {"class_id": 39, "class_name": "bottle", "x": 0.76326, "y": 0.159672, "w": 0.026313, "h": 0.058719}, {"class_id": 40, "class_name": "wine glass", "x": 0.71174, "y": 0.437547, "w": 0.020396, "h": 0.042438}, {"class_id": 0, "class_name": "person", "x": 0.953687, "y": 0.523156, "w": 0.092625, "h": 0.237469}, {"class_id": 40, "class_name": "wine glass", "x": 0.755552, "y": 0.449359, "w": 0.016521, "h": 0.022375}]}, {"index": 249, "stem": "000000025424", "image_url": "runs/r10007/delivery/images/000000025424.jpg", "boxes": [{"class_id": 32, "class_name": "sports ball", "x": 0.933208, "y": 0.07225, "w": 0.079157, "h": 0.029656}, {"class_id": 38, "class_name": "tennis racket", "x": 0.821991, "y": 0.310711, "w": 0.281733, "h": 0.232234}, {"class_id": 0, "class_name": "person", "x": 0.522084, "y": 0.690562, "w": 0.43541, "h": 0.618875}]}, {"index": 250, "stem": "000000025560", "image_url": "runs/r10007/delivery/images/000000025560.jpg", "boxes": [{"class_id": 62, "class_name": "tv", "x": 0.555883, "y": 0.274115, "w": 0.624703, "h": 0.543521}, {"class_id": 15, "class_name": "cat", "x": 0.502695, "y": 0.551573, "w": 0.588359, "h": 0.331896}, {"class_id": 0, "class_name": "person", "x": 0.423875, "y": 0.264042, "w": 0.2545, "h": 0.40675}, {"class_id": 41, "class_name": "cup", "x": 0.061867, "y": 0.941146, "w": 0.122297, "h": 0.117708}]}];
+    let curIndex = 0;
+    const notesData = {};
+
+    const canvas = document.getElementById('imgCanvas');
+    const ctx = canvas.getContext('2d');
+    const imgObj = new Image();
+
+    imgObj.onload = () => {
+      canvas.width = imgObj.naturalWidth;
+      canvas.height = imgObj.naturalHeight;
+      drawCurrent();
+    };
+
+    function loadImage(idx) {
+      if (idx < 0 || idx >= items.length) return;
+      curIndex = idx;
+      const it = items[curIndex];
+      document.getElementById('curIdxText').textContent = (curIndex + 1);
+      document.getElementById('stemText').textContent = it.stem + '.jpg (' + it.index + '/250)';
+      document.getElementById('boxCountText').textContent = it.boxes.length + ' Bounding Box phát hiện';
+      
+      // Class list pills
+      const clDiv = document.getElementById('classList');
+      clDiv.innerHTML = '';
+      it.boxes.forEach(b => {
+        const span = document.createElement('span');
+        span.className = 'bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200';
+        span.textContent = b.class_name;
+        clDiv.appendChild(span);
+      });
+
+      // Restore saved note
+      const saved = notesData[it.stem] || { verdict: '', note: '' };
+      document.getElementById('noteInput').value = saved.note || '';
+      updateCharCount();
+      updateVerdictButtons(saved.verdict);
+
+      imgObj.src = it.image_url;
+    }
+
+    function drawCurrent() {
+      ctx.drawImage(imgObj, 0, 0);
+      const showBoxes = document.getElementById('toggleBoxes').checked;
+      if (!showBoxes) return;
+
+      const it = items[curIndex];
+      const W = canvas.width;
+      const H = canvas.height;
+
+      it.boxes.forEach(b => {
+        const bx = (b.x - b.w / 2) * W;
+        const by = (b.y - b.h / 2) * H;
+        const bw = b.w * W;
+        const bh = b.h * H;
+
+        ctx.strokeStyle = '#e11d48';
+        ctx.lineWidth = Math.max(2, Math.round(W / 250));
+        ctx.strokeRect(bx, by, bw, bh);
+
+        ctx.fillStyle = 'rgba(225, 29, 72, 0.85)';
+        const text = b.class_name;
+        ctx.font = 'bold ' + Math.max(12, Math.round(W / 35)) + 'px sans-serif';
+        const tw = ctx.measureText(text).width;
+        ctx.fillRect(bx, Math.max(0, by - 20), tw + 8, 20);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(text, bx + 4, Math.max(15, by - 5));
+      });
+    }
+
+    function setVerdict(v) {
+      const it = items[curIndex];
+      notesData[it.stem] = notesData[it.stem] || {};
+      notesData[it.stem].verdict = v;
+      updateVerdictButtons(v);
+    }
+
+    function updateVerdictButtons(v) {
+      const bConf = document.getElementById('btnConfirmed');
+      const bRej = document.getElementById('btnRejected');
+      bConf.className = 'py-2 px-3 text-xs font-bold rounded-lg border transition flex items-center justify-center gap-1 font-mono ' + 
+        (v === 'confirmed' ? 'bg-rose-700 text-white border-rose-700 shadow' : 'border-slate-300 hover:bg-slate-100 text-slate-700');
+      bRej.className = 'py-2 px-3 text-xs font-bold rounded-lg border transition flex items-center justify-center gap-1 font-mono ' + 
+        (v === 'rejected' ? 'bg-emerald-700 text-white border-emerald-700 shadow' : 'border-slate-300 hover:bg-slate-100 text-slate-700');
+    }
+
+    function saveCurrentNote() {
+      const it = items[curIndex];
+      notesData[it.stem] = notesData[it.stem] || {};
+      notesData[it.stem].note = document.getElementById('noteInput').value.trim();
+      alert('Đã lưu ghi chú cho ảnh ' + it.stem);
+    }
+
+    function updateCharCount() {
+      const text = document.getElementById('noteInput').value.trim();
+      document.getElementById('charCount').textContent = text.length;
+      document.getElementById('charWarn').classList.toggle('hidden', text.length === 0 || text.length >= 20);
+    }
+    document.getElementById('noteInput').addEventListener('input', updateCharCount);
+
+    function prevImage() { if (curIndex > 0) loadImage(curIndex - 1); }
+    function nextImage() { if (curIndex < items.length - 1) loadImage(curIndex + 1); }
+
+    function exportCSV() {
+      let csv = 'image,type,verdict,note\n';
+      items.forEach(it => {
+        const d = notesData[it.stem] || {};
+        if (d.verdict) {
+          csv += `${it.stem},review,${d.verdict},"${(d.note || '').replace(/"/g, '""')}"\n`;
+        }
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'review_batch7.csv';
+      a.click();
+    }
+
+    // Init first image
+    loadImage(0);
+  </script>
+</body>
+</html>
