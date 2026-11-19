@@ -18,7 +18,7 @@
 | 04 | **Phạm Việt Hoàng** | **2A202603254** | **Thành viên 4 — QC Review Lead:** Quản trị `review_log.csv`, kiểm tra trực quan ảnh, thẩm định 100% ghi chú &ge; 20 ký tự, hợp nhất ra `errors.json`. Review ảnh 0106–0145. |
 | 05 | **Mai Văn Phong** | **2A202603256** | **Thành viên 5 — Handover v2 & Rework Lead:** Đóng gói thư mục v2 đạt 17/17 tiêu chí `check_handover.py`, lập `rework_queue.csv`, `manifest.csv`, `label_summary.csv`, `README.txt`. Review ảnh 0146–0180. |
 | 06 | **Nguyễn Văn Hùng** | **2A202603295** | **Thành viên 6 — Lineage & Audit Trail Lead:** Tính tỷ lệ lỗi v1 (vượt 2% &rarr; HOLD), ghi nhật ký sự kiện `lineage.jsonl`, phân tích tác động model `R-021`, lập `trace.json`. Review ảnh 0181–0215. |
-| 07 | **Hoàng Thuận Thiên** | **2A202603270** | **Thành viên 7 — Security & Submission Lead:** Viết `security.md` (xử lý USB, vi phạm bản quyền, ảnh PII khuôn mặt &rarr; HOLD + báo phụ trách), hoàn thiện `REPORT.md`, `prompts.md`, phụ trách Submission Gate. Review ảnh 0216–0250. |
+| 07 | **Hoàng Thuận Thiện** | **2A202603270** | **Thành viên 7 — Security & Submission Lead:** Viết `security.md` (xử lý USB, vi phạm bản quyền, ảnh PII khuôn mặt &rarr; HOLD + báo phụ trách), hoàn thiện `REPORT.md`, `prompts.md`, phụ trách Submission Gate. Review ảnh 0216–0250. |
 
 ---
 
