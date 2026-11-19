@@ -1,0 +1,3 @@
+﻿image,type,verdict,note
+000000003156,missing_box,confirmed,Trong ảnh có bồn cầu rõ ràng cạnh người ngồi nhưng file detection không có bbox lớp toilet.
+000000006723,class_swap,confirmed,Phương tiện bên phải có bbox bus và truck chồng gần trùng nhau trong khi mask Panoptic xác định vùng này là bus.
