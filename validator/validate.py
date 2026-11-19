@@ -205,8 +205,10 @@ def check_panoptic_rules(delivery_dir: Path, panoptic: dict) -> list[dict]:
                     if actual_pixels < s.get("area", 0):
                         errors.append({"type": "thing_overlap", "target": stem})
                         break
-        except Exception:
-            pass
+        except (ValueError, OSError, RuntimeError) as exc:
+            raise ValueError(
+                f"Cannot read panoptic mask '{mask_path}': {exc}"
+            ) from exc
 
     return errors
 

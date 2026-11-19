@@ -203,5 +203,36 @@ class TestTask2Rules(unittest.TestCase):
             any(e["type"] == "invalid_category_id" for e in errors)
         )
 
+    def test_corrupted_panoptic_mask_is_not_silent(self):
+        panoptic = {
+            "categories": [{"id": 1, "isthing": 1}],
+            "annotations": [
+                {
+                    "file_name": "broken.png",
+                    "segments_info": [
+                        {
+                            "id": 261,
+                            "category_id": 1,
+                            "area": 100,
+                            "iscrowd": 0,
+                        }
+                    ],
+                }
+            ],
+        }
+
+        with TemporaryDirectory() as tmp:
+            delivery = Path(tmp)
+            (delivery / "masks").mkdir()
+
+            (delivery / "masks" / "broken.png").write_bytes(
+                b"not a valid PNG"
+            )
+
+            with self.assertRaises(
+                (ValueError, OSError, RuntimeError)
+            ):
+                check_panoptic_rules(delivery, panoptic)
+
 if __name__ == "__main__":
     unittest.main()
