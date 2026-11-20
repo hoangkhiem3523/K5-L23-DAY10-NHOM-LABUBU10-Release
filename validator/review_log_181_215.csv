@@ -1,7 +1,0 @@
-image,type,verdict,note
-000000018575,missing_box,confirmed,"Ba chai gia vị thân trắng nắp xanh nằm trên khăn ở góc phải bàn, đều nhìn rõ."
-000000019402,missing_box,confirmed,"Ảnh có hai người đội mũ trùm; người bên phải hiện rõ nhưng thiếu hộp detection riêng."
-000000020553,missing_box,confirmed,"Hai chai đồ uống dựng trên bàn nhỏ cạnh thú bông và các món đồ chơi ngoài bãi đất."
-000000021167,invalid_category_id,confirmed,"Người đàn ông mặc vest cầm ly rượu chân cao; segment của chiếc ly dùng mã lớp không hợp lệ."
-000000021879,duplicate_box,confirmed,"Có ba ván lướt sóng trong ảnh; hai hộp gần trùng nhau bao quanh cùng chiếc ván xanh phía trên."
-000000022192,bbox_drift,confirmed,"Chó nâu ngồi cạnh túi đỏ trên giường; hộp bị dịch xuống phải và lệch khỏi phần đầu, chân."
