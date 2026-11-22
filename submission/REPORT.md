@@ -1,10 +1,9 @@
 # Báo cáo Nhóm — Nhóm LABUBU10 (Day 10 Lab)
 
 - **Mã nhóm:** LABUBU10 (NHOM LABUBU10)
-- **Seed luyện tập:** 10007 (Bộ bàn giao v1 `lab250_634019b57111`, v2 `lab250_634019b57111_v2`)
+- **Seed luyện tập:** 10007 (Bộ bàn giao v1 `lab250_d6fae03acae5`, v2 `lab250_d6fae03acae5_v2`)
 - **Đề ẩn lựa chọn:** Đề 10 (`de_an_10` / `de_an.zip`, Release ID: `lab250_278031cc6eb2`)
 - **Repo GitHub:** https://github.com/hoangkhiem3523/K5-L23-DAY10-NHOM-LABUBU10-Release
-- **Nhánh chính:** `Tny`
 
 ---
 
@@ -18,7 +17,7 @@
 | 04 | **Phạm Việt Hoàng** | **2A202603254** | **Thành viên 4 — QC Review Lead:** Quản trị `review_log.csv`, kiểm tra trực quan ảnh, thẩm định 100% ghi chú &ge; 20 ký tự, hợp nhất ra `errors.json`. Review ảnh 0106–0145. |
 | 05 | **Mai Văn Phong** | **2A202603256** | **Thành viên 5 — Handover v2 & Rework Lead:** Đóng gói thư mục v2 đạt 17/17 tiêu chí `check_handover.py`, lập `rework_queue.csv`, `manifest.csv`, `label_summary.csv`, `README.txt`. Review ảnh 0146–0180. |
 | 06 | **Nguyễn Văn Hùng** | **2A202603295** | **Thành viên 6 — Lineage & Audit Trail Lead:** Tính tỷ lệ lỗi v1 (vượt 2% &rarr; HOLD), ghi nhật ký sự kiện `lineage.jsonl`, phân tích tác động model `R-021`, lập `trace.json`. Review ảnh 0181–0215. |
-| 07 | **Hoàng Thuận Thiện** | **2A202603270** | **Thành viên 7 — Security & Submission Lead:** Viết `security.md` (xử lý USB, vi phạm bản quyền, ảnh PII khuôn mặt &rarr; HOLD + báo phụ trách), hoàn thiện `REPORT.md`, `prompts.md`, phụ trách Submission Gate. Review ảnh 0216–0250. |
+| 07 | **Hoàng Thuận Thiện** | **2A202603270** | **Thành viên 7 — Security & Submission Lead:** Viết `security.md` (xử lý USB, vi phạm bản quyền, ảnh PII khuôn mặt &rarr; HOLD + báo phụ trách), hoàn thiện `REPORT.md`, `prompts.md`, phụ trách thẩm định 19 lỗi Đề ẩn 10. Review ảnh 0216–0250. |
 
 ---
 
@@ -27,9 +26,9 @@
   - Nhóm lỗi luật (`rule_detectable`): Precision = 1.0, Recall = 1.0, **F1 = 1.0** (Phát hiện đầy đủ 13/13 lỗi luật, 0 FP, 0 FN).
   - Nhóm lỗi gán nhãn (`cross_check_review`): Precision = 1.0, Recall = 1.0, **F1 = 1.0** (Sau khi xem ảnh và xác nhận 10/10 lỗi).
   - Điểm tổng thể (`overall`): Precision = 1.0, Recall = 1.0, **F1 = 1.0** (Bắt chính xác 23/23 lỗi).
-- **Bộ bàn giao v2 (`lab250_634019b57111_v2`):**
+- **Bộ bàn giao v2 (`lab250_d6fae03acae5_v2`):**
   - Chạy `python scripts/check_handover.py --run runs/r10007`: **17/17 PASS** hoàn hảo.
-  - Phân tách đúng 13 ảnh lỗi Detection vào `rework_queue.csv` giao đúng Annotator theo `jobs.csv`.
+  - Phân tách đúng 14 ảnh lỗi Detection vào `rework_queue.csv` giao đúng Annotator theo `jobs.csv`.
   - Giữ lại các ảnh lỗi Panoptic và sửa đổi triệt để các lỗi kỹ thuật (hash, guideline, split).
 - **Truy vết Ticket team AI (Seed 10007):**
   - `tier_a`: 2 ảnh (`000000008021`, `000000009590`) thuộc `scene_195` và `scene_224`, job guideline cũ v1.2, có nhãn `bottle`.
@@ -95,6 +94,5 @@ Trong bài toán kiểm định chất lượng dữ liệu không có nhãn g�
   - `tier_a`: `["img_0074", "img_0236"]` (thuộc cảnh `scene_290` và `scene_635`, job v1.2, có box `car`).
   - `tier_b`: `["img_0135", "img_0146", "img_0188", "img_0209"]`.
   - `notify`: `["A02", "A04", "Q02"]`.
-- **Đóng gói nộp bài Submission Gate:**
-  - File nộp: `de_an_10__NHOMLABUBU10.zip` (1.4 KB, sạch gọn, chỉ chứa `submission/de_an/` với `errors.json`, `review_log.csv` và `trace.json`).
-  - 100% dòng trong `review_log.csv` có ghi chú cụ thể &ge; 20 ký tự mô tả trung thực bằng chứng mắt thấy trong ảnh.
+- **Đóng gói nộp bài Submission:**
+  - 100% dòng trong `review_log.csv` có ghi chú cụ thể &ge; 20 ký tự mô tả trung thực bằng chứng mắt thấy trong ảnh, phân biệt rõ lỗi gán nhãn với các ca lệch tự nhiên do che khuất/crowd.

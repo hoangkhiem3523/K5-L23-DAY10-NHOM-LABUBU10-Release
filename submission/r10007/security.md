@@ -1,6 +1,6 @@
 # Bảo mật khi làm việc với Dữ liệu — Seed 10007
 
-> Báo cáo đánh giá an toàn thông tin và bảo mật dữ liệu gắn liền với lô bàn giao `lab250_634019b57111`.
+> Báo cáo đánh giá an toàn thông tin và bảo mật dữ liệu gắn liền với lô bàn giao `lab250_d6fae03acae5`.
 
 ## 1. Ca USB: Hết giờ làm việc, muốn chép lô dữ liệu về nhà làm tiếp
 

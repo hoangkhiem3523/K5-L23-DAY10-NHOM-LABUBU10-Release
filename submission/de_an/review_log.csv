@@ -9,3 +9,8 @@ img_0053,class_swap,confirmed,"Hình ảnh cầu thủ ném bóng thật rõ né
 img_0091,class_swap,confirmed,"Bánh sinh nhật lớn đặt trên bàn kèm dao cắt bánh, detection gán nhầm sang lớp donut."
 img_0094,class_swap,confirmed,"Xe tải thùng lớn màu xanh chở hàng trên đường, detection nhận nhầm thành car thông thường."
 img_0105,category_swap,confirmed,Cốc uống nước trên bàn ăn bị phân đoạn panoptic gán nhầm sang nhãn wine glass.
+img_0179,missing_box,rejected,"Chiếc ghế ăn thứ hai bị che khuất phần lớn phía sau bàn ăn, đây là độ lệch che khuất tự nhiên trong COCO không phải lỗi gài thiếu box."
+img_0008,class_swap,rejected,"Xe máy trong ảnh có kích thước nhỏ và góc nhìn bị khuất một phần, nhãn detection gán đúng ngữ cảnh, không phải lỗi đổi nhầm lớp."
+img_0013,instance_merge,rejected,"Hai con chim đứng gần nhau trên cành cây nhưng cả mask panoptic và detection box đều phân tách riêng biệt, không bị dính gộp."
+img_0038,instance_merge,rejected,"Đám đông người tắm biển phía xa là crowd tự nhiên của COCO, không phát hiện lỗi gộp phân đoạn nhân tạo."
+img_0048,instance_merge,rejected,"Cặp đối tượng đứng cạnh nhau trong khung cảnh nhưng ranh giới phân đoạn rõ ràng, không có lỗi gộp instance."

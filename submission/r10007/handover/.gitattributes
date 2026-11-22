@@ -1,0 +1,2 @@
+# Preserve the file bytes recorded in the v2 manifest and ZIP checksum.
+lab250_d6fae03acae5_v2/** -text

@@ -1,128 +1,96 @@
 {
-  "errors": [
-    {
-      "type": "bbox_drift",
-      "target": "000000009772",
-      "unit": "image"
-    },
-    {
-      "type": "wrong_hash",
-      "target": "000000022479",
-      "unit": "image"
-    },
-    {
-      "type": "bbox_out_of_bounds",
-      "target": "000000006954",
-      "unit": "image"
-    },
-    {
-      "type": "missing_box",
-      "target": "000000019402",
-      "unit": "image",
-      "removed_class": "person"
-    },
-    {
-      "type": "invalid_class",
-      "target": "000000015660",
-      "unit": "image"
-    },
-    {
-      "type": "missing_box",
-      "target": "000000003156",
-      "unit": "image",
-      "removed_class": "toilet"
-    },
-    {
-      "type": "missing_image",
-      "target": "000000001490",
-      "unit": "image"
-    },
-    {
-      "type": "instance_merge",
-      "target": "000000023899",
-      "unit": "image"
-    },
-    {
-      "type": "guideline_mismatch",
-      "target": "000000021503",
-      "unit": "image"
-    },
-    {
-      "type": "thing_overlap",
-      "target": "000000002153",
-      "unit": "image"
-    },
-    {
-      "type": "bbox_out_of_bounds",
-      "target": "000000005586",
-      "unit": "image"
-    },
-    {
-      "type": "instance_merge",
-      "target": "000000015440",
-      "unit": "image"
-    },
-    {
-      "type": "bbox_drift",
-      "target": "000000017905",
-      "unit": "image"
-    },
-    {
-      "type": "thing_overlap",
-      "target": "000000013923",
-      "unit": "image"
-    },
-    {
-      "type": "class_swap",
-      "target": "000000009769",
-      "unit": "image",
-      "from_class": "truck",
-      "to_class": "car"
-    },
-    {
-      "type": "bbox_drift",
-      "target": "000000022192",
-      "unit": "image"
-    },
-    {
-      "type": "duplicate_box",
-      "target": "000000021879",
-      "unit": "image"
-    },
-    {
-      "type": "class_swap",
-      "target": "000000014888",
-      "unit": "image",
-      "from_class": "cow",
-      "to_class": "sheep"
-    },
-    {
-      "type": "scene_leak",
-      "target": "scene_322",
-      "unit": "scene",
-      "image": "000000006213"
-    },
-    {
-      "type": "missing_image",
-      "target": "000000013597",
-      "unit": "image"
-    },
-    {
-      "type": "invalid_category_id",
-      "target": "000000021167",
-      "unit": "image"
-    },
-    {
-      "type": "category_swap",
-      "target": "000000016249",
-      "unit": "image",
-      "from_class": "bench",
-      "to_class": "couch"
-    },
-    {
-      "type": "invalid_class",
-      "target": "000000022892",
-      "unit": "image"
-    }
-  ]
+ "errors": [
+  {
+   "type": "bbox_drift",
+   "target": "000000009772"
+  },
+  {
+   "type": "bbox_drift",
+   "target": "000000017905"
+  },
+  {
+   "type": "bbox_drift",
+   "target": "000000022192"
+  },
+  {
+   "type": "bbox_out_of_bounds",
+   "target": "000000005586"
+  },
+  {
+   "type": "bbox_out_of_bounds",
+   "target": "000000006954"
+  },
+  {
+   "type": "category_swap",
+   "target": "000000016249"
+  },
+  {
+   "type": "class_swap",
+   "target": "000000009769"
+  },
+  {
+   "type": "class_swap",
+   "target": "000000014888"
+  },
+  {
+   "type": "duplicate_box",
+   "target": "000000021879"
+  },
+  {
+   "type": "guideline_mismatch",
+   "target": "000000021503"
+  },
+  {
+   "type": "instance_merge",
+   "target": "000000015440"
+  },
+  {
+   "type": "instance_merge",
+   "target": "000000023899"
+  },
+  {
+   "type": "invalid_category_id",
+   "target": "000000021167"
+  },
+  {
+   "type": "invalid_class",
+   "target": "000000015660"
+  },
+  {
+   "type": "invalid_class",
+   "target": "000000022892"
+  },
+  {
+   "type": "missing_box",
+   "target": "000000003156"
+  },
+  {
+   "type": "missing_box",
+   "target": "000000019402"
+  },
+  {
+   "type": "missing_image",
+   "target": "000000001490"
+  },
+  {
+   "type": "missing_image",
+   "target": "000000013597"
+  },
+  {
+   "type": "scene_leak",
+   "target": "scene_322"
+  },
+  {
+   "type": "thing_overlap",
+   "target": "000000002153"
+  },
+  {
+   "type": "thing_overlap",
+   "target": "000000013923"
+  },
+  {
+   "type": "wrong_hash",
+   "target": "000000022479"
+  }
+ ]
 }

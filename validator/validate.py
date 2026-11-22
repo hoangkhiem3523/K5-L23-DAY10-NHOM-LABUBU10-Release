@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Validator kiểm tra chất lượng bàn giao dữ liệu (Detection & Panoptic).
+"""Validator cho Day 10 Lab - Bắt lỗi luật và đối chiếu sinh ứng viên.
 
-Sử dụng:
-  python validator/validate.py <delivery_dir> --out <errors.json> [--candidates <candidates.json>]
+Phân công nhóm:
+  - TV1: Rule bắt lỗi file, hash SHA-256, và định dạng Detection (YOLO).
+  - TV2: Rule bắt lỗi Metadata (scene_leak, guideline_mismatch) và Panoptic (invalid_category_id, thing_overlap).
+  - TV3: Trích xuất ứng viên nghi vấn lỗi gán nhãn qua đối chiếu chéo Detection <-> Panoptic.
+
+Giao diện cố định:
+    python validator/validate.py <thư_mục_delivery> --out <errors.json> [--candidates <candidates.json>]
 """
 
 from __future__ import annotations
@@ -11,438 +16,496 @@ import argparse
 import csv
 import hashlib
 import json
-import math
 import sys
 from pathlib import Path
 
-# Thư viện chuẩn được phép nạp pngutil từ scripts/
+# Thêm thư mục scripts để import pngutil
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS_DIR = ROOT / "scripts"
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
-
-try:
-    import pngutil
-except ImportError:
-    pngutil = None
+SCRIPTS = ROOT / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+import pngutil  # noqa: E402
 
 
-def calc_sha256(path: Path) -> str:
-    """Tính mã băm SHA-256 trên byte nhị phân của file."""
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        while chunk := f.read(65536):
-            h.update(chunk)
-    return h.hexdigest()
+def compute_sha256(path: Path) -> str:
+    """Tính mã băm sha256 của file."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def bbox_iou(b1: tuple[float, float, float, float], b2: tuple[float, float, float, float]) -> float:
-    """Tính IoU giữa 2 box [x1, y1, x2, y2]."""
-    ix1 = max(b1[0], b2[0])
-    iy1 = max(b1[1], b2[1])
-    ix2 = min(b1[2], b2[2])
-    iy2 = min(b1[3], b2[3])
-    iw = max(0.0, ix2 - ix1)
-    ih = max(0.0, iy2 - iy1)
-    inter = iw * ih
-    a1 = max(0.0, b1[2] - b1[0]) * max(0.0, b1[3] - b1[1])
-    a2 = max(0.0, b2[2] - b2[0]) * max(0.0, b2[3] - b2[1])
-    union = a1 + a2 - inter
-    return inter / union if union > 0 else 0.0
+def sha256_file(path: Path) -> str:
+    """Tính mã băm sha256 của file (alias tương thích)."""
+    return compute_sha256(path)
 
 
-def validate_delivery(delivery_dir: Path, out_path: Path, candidates_path: Path | None = None):
-    delivery_dir = delivery_dir.resolve()
+def compute_iou(boxA: tuple[float, float, float, float], boxB: tuple[float, float, float, float]) -> float:
+    """Tính Intersection over Union (IoU) giữa 2 bounding box dạng (xmin, ymin, xmax, ymax)."""
+    xA = max(boxA[0], boxB[0])
+    yA = max(boxA[1], boxB[1])
+    xB = min(boxA[2], boxB[2])
+    yB = min(boxA[3], boxB[3])
+
+    inter_w = max(0.0, xB - xA)
+    inter_h = max(0.0, yB - yA)
+    inter_area = inter_w * inter_h
+
+    if inter_area == 0:
+        return 0.0
+
+    areaA = max(0.0, boxA[2] - boxA[0]) * max(0.0, boxA[3] - boxA[1])
+    areaB = max(0.0, boxB[2] - boxB[0]) * max(0.0, boxB[3] - boxB[1])
+    union_area = areaA + areaB - inter_area
+
+    return inter_area / (union_area + 1e-12)
+
+
+# ==============================================================================
+# TV1: KIỂM TRA LỖI FILE, HASH VÀ DETECTION
+# ==============================================================================
+
+def check_file_and_hash_rules(delivery_dir: Path, manifest: dict) -> list[dict]:
+    """Kiểm tra missing_image và wrong_hash dựa trên manifest.json."""
+    errors = []
+    items = manifest.get("items", {})
+
+    for stem, it in items.items():
+        img_path = delivery_dir / it["image"]
+        lbl_path = delivery_dir / it["label"]
+        msk_path = delivery_dir / it["mask"]
+
+        # 1. missing_image: manifest có khai báo nhưng không có file ảnh trên đĩa
+        if not img_path.is_file():
+            errors.append({"type": "missing_image", "target": stem})
+            continue
+
+        # 2. wrong_hash: mã băm SHA-256 trong manifest không khớp với byte thực tế
+        if compute_sha256(img_path) != it.get("image_sha256"):
+            errors.append({"type": "wrong_hash", "target": stem})
+            continue
+
+        if lbl_path.is_file() and compute_sha256(lbl_path) != it.get("label_sha256"):
+            errors.append({"type": "wrong_hash", "target": stem})
+            continue
+
+        if msk_path.is_file() and compute_sha256(msk_path) != it.get("mask_sha256"):
+            errors.append({"type": "wrong_hash", "target": stem})
+            continue
+
+    return errors
+
+
+def check_detection_rules(delivery_dir: Path, manifest: dict) -> list[dict]:
+    """Kiểm tra invalid_class, bbox_out_of_bounds, duplicate_box."""
+    errors = []
+    items = manifest.get("items", {})
+
+    for stem, it in items.items():
+        lbl_path = delivery_dir / it["label"]
+        if not lbl_path.is_file():
+            continue
+
+        boxes = []
+        has_invalid_class = False
+        has_oob = False
+
+        for line in lbl_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split()
+            if len(parts) < 5:
+                continue
+            cls_id = int(float(parts[0]))
+            xc, yc, w, h = map(float, parts[1:5])
+
+            # 3. invalid_class: class_id nằm ngoài [0..79]
+            if not (0 <= cls_id < 80):
+                if not has_invalid_class:
+                    errors.append({"type": "invalid_class", "target": stem})
+                    has_invalid_class = True
+
+            # 4. bbox_out_of_bounds: tọa độ vượt [0, 1] với dung sai 0.01 (tức < -0.01 hoặc > 1.01)
+            left = xc - w / 2
+            right = xc + w / 2
+            top = yc - h / 2
+            bottom = yc + h / 2
+            if left < -0.01 or top < -0.01 or right > 1.01 or bottom > 1.01:
+                if not has_oob:
+                    errors.append({"type": "bbox_out_of_bounds", "target": stem})
+                    has_oob = True
+
+            boxes.append((cls_id, xc, yc, w, h))
+
+        # 5. duplicate_box: cùng class, tâm và kích thước lệch <= 1-2 pixel (< 0.005)
+        has_dup = False
+        for i in range(len(boxes)):
+            if has_dup:
+                break
+            for j in range(i + 1, len(boxes)):
+                c1, x1, y1, w1, h1 = boxes[i]
+                c2, x2, y2, w2, h2 = boxes[j]
+                if c1 == c2:
+                    if abs(w1 - w2) < 0.002 and abs(h1 - h2) < 0.002:
+                        if abs(x1 - x2) < 0.01 and abs(y1 - y2) < 0.01:
+                            errors.append({"type": "duplicate_box", "target": stem})
+                            has_dup = True
+                            break
+
+    return errors
+
+
+# ==============================================================================
+# TV2: KIỂM TRA LỖI METADATA VÀ PANOPTIC
+# ==============================================================================
+
+def check_metadata_rules(delivery_dir: Path, metadata: dict) -> list[dict]:
+    """Kiểm tra scene_leak và guideline_mismatch."""
+    errors = []
+
+    # Đọc quy định guideline chuẩn của từng Job trong jobs.csv
+    jobs_csv_path = delivery_dir / "jobs.csv"
+    job_guidelines = {}
+    if jobs_csv_path.is_file():
+        with open(jobs_csv_path, encoding="utf-8", newline="") as f:
+            for row in csv.DictReader(f):
+                job_guidelines[row["job_id"].strip()] = row["guideline"].strip()
+
+    items = metadata.get("items", [])
+
+    # 6. scene_leak: một cảnh (scene_id) có ảnh nằm ở cả train và val (target là scene_id)
+    scene_splits: dict[str, set[str]] = {}
+    for it in items:
+        sid = it.get("scene_id")
+        split = it.get("split")
+        if sid and split:
+            scene_splits.setdefault(sid, set()).add(split)
+
+    for sid, splits in scene_splits.items():
+        if len(splits) > 1:
+            errors.append({"type": "scene_leak", "target": sid})
+
+    # 7. guideline_mismatch: guideline của ảnh khác guideline được quy định tại Job của nó
+    for it in items:
+        job_id = it.get("job_id")
+        img_guideline = it.get("guideline_version")
+        expected_guideline = job_guidelines.get(job_id)
+        if expected_guideline and img_guideline != expected_guideline:
+            errors.append({"type": "guideline_mismatch", "target": it.get("image")})
+
+    return errors
+
+
+def check_panoptic_rules(delivery_dir: Path, panoptic: dict) -> list[dict]:
+    """Kiểm tra invalid_category_id và thing_overlap."""
+    errors = []
+    valid_cat_ids = {c["id"] for c in panoptic.get("categories", [])}
+    thing_cat_ids = {c["id"] for c in panoptic.get("categories", []) if c.get("isthing")}
+
+    for ann in panoptic.get("annotations", []):
+        stem = Path(ann.get("file_name", "")).stem
+        has_invalid_cat = False
+
+        # 8. invalid_category_id: category_id trong segments_info không nằm trong categories
+        for s in ann.get("segments_info", []):
+            if s.get("category_id") not in valid_cat_ids:
+                has_invalid_cat = True
+                break
+
+        if has_invalid_cat:
+            errors.append({"type": "invalid_category_id", "target": stem})
+
+        # 9. thing_overlap: diện tích khai báo area lớn hơn số pixel thực tế của segment trong mask PNG
+        mask_path = delivery_dir / "masks" / ann.get("file_name", "")
+        if not mask_path.is_file():
+            continue
+
+        try:
+            w, h, pixels = pngutil.read_rgb(mask_path)
+            counts: dict[int, int] = {}
+            for i in range(0, len(pixels), 3):
+                sid = pixels[i] + pixels[i + 1] * 256 + pixels[i + 2] * 65536
+                if sid != 0:
+                    counts[sid] = counts.get(sid, 0) + 1
+
+            for s in ann.get("segments_info", []):
+                if s.get("category_id") in thing_cat_ids and not s.get("iscrowd"):
+                    actual_pixels = counts.get(s["id"], 0)
+                    if actual_pixels < s.get("area", 0):
+                        errors.append({"type": "thing_overlap", "target": stem})
+                        break
+        except (ValueError, OSError, RuntimeError) as exc:
+            raise ValueError(
+                f"Cannot read panoptic mask '{mask_path}': {exc}"
+            ) from exc
+
+    return errors
+
+
+def validate_rules(delivery_dir: Path) -> tuple[list[dict], dict]:
+    """Tổng hợp kiểm tra toàn bộ 9 lỗi luật và trả về context dữ liệu."""
     manifest_path = delivery_dir / "manifest.json"
+    if not manifest_path.is_file():
+        raise FileNotFoundError(f"Không tìm thấy manifest.json tại {manifest_path}")
+    manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+
     metadata_path = delivery_dir / "metadata.json"
+    metadata_data = json.loads(metadata_path.read_text(encoding="utf-8")) if metadata_path.is_file() else {}
+
     panoptic_path = delivery_dir / "panoptic.json"
+    panoptic_data = json.loads(panoptic_path.read_text(encoding="utf-8")) if panoptic_path.is_file() else {}
+
     classes_path = delivery_dir / "classes.txt"
-    jobs_path = delivery_dir / "jobs.csv"
-
-    errors: list[dict[str, str]] = []
-    candidates: list[dict] = []
-
-    # 1. Đọc classes.txt (80 lớp detection)
-    classes80: list[str] = []
+    yolo_classes = {}
     if classes_path.is_file():
         for line in classes_path.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if line:
-                parts = line.split(" ", 1)
-                classes80.append(parts[1].strip() if len(parts) > 1 else parts[0].strip())
+                parts = line.split(maxsplit=1)
+                if len(parts) == 2:
+                    yolo_classes[int(parts[0])] = parts[1]
 
-    # 2. Đọc jobs.csv
-    jobs_info: dict[str, dict[str, str]] = {}
-    if jobs_path.is_file():
-        with jobs_path.open(encoding="utf-8", newline="") as f:
-            for row in csv.DictReader(f):
-                jobs_info[row["job_id"]] = row
+    errors: list[dict] = []
+    errors.extend(check_file_and_hash_rules(delivery_dir, manifest_data))
+    errors.extend(check_detection_rules(delivery_dir, manifest_data))
+    errors.extend(check_metadata_rules(delivery_dir, metadata_data))
+    errors.extend(check_panoptic_rules(delivery_dir, panoptic_data))
 
-    # 3. Đọc manifest.json & metadata.json
-    manifest_items = {}
-    if manifest_path.is_file():
-        manifest_items = json.loads(manifest_path.read_text(encoding="utf-8")).get("items", {})
+    valid_categories = {c["id"]: c["name"] for c in panoptic_data.get("categories", [])}
+    thing_categories = {c["id"] for c in panoptic_data.get("categories", []) if c.get("isthing", 0) == 1}
 
-    metadata_items = {}
-    if metadata_path.is_file():
-        for m in json.loads(metadata_path.read_text(encoding="utf-8")).get("items", []):
-            metadata_items[m["image"]] = m
+    context = {
+        "manifest": manifest_data.get("items", {}),
+        "metadata": {m["image"]: m for m in metadata_data.get("items", [])},
+        "yolo_classes": yolo_classes,
+        "panoptic_data": panoptic_data,
+        "valid_categories": valid_categories,
+        "thing_categories": thing_categories,
+    }
+    return errors, context
 
-    # 4. Đọc panoptic.json
-    panoptic_doc = {}
-    cat_by_id = {}
-    cat_name_to_id = {}
-    thing_cat_ids = set()
-    pan_annotations = {}
-    if panoptic_path.is_file():
-        panoptic_doc = json.loads(panoptic_path.read_text(encoding="utf-8"))
-        for c in panoptic_doc.get("categories", []):
-            cat_by_id[c["id"]] = c
-            cat_name_to_id[c["name"]] = c["id"]
-            if c.get("isthing"):
-                thing_cat_ids.add(c["id"])
-        for ann in panoptic_doc.get("annotations", []):
-            pan_annotations[ann["image_id"]] = ann
 
-    # =========================================================================
-    # KIỂM TRA LỖI LUẬT MỨC METADATA: scene_leak & guideline_mismatch
-    # =========================================================================
-    scenes: dict[str, set[str]] = {}
-    for img_name, meta in metadata_items.items():
-        scenes.setdefault(meta["scene_id"], set()).add(meta["split"])
-        # guideline_mismatch
-        job_id = meta.get("job_id")
-        if job_id in jobs_info:
-            expected_guideline = jobs_info[job_id]["guideline"]
-            if meta.get("guideline_version") != expected_guideline:
-                errors.append({"type": "guideline_mismatch", "target": img_name})
+# ==============================================================================
+# TV3: ĐỐI CHIẾU CHÉO DETECTION <-> PANOPTIC TRÍCH XUẤT ỨNG VIÊN LỖI GÁN NHÃN
+# ==============================================================================
 
-    for sc_id, splits in scenes.items():
-        if len(splits) > 1:
-            errors.append({"type": "scene_leak", "target": sc_id})
+def extract_candidates(delivery_dir: Path, context: dict, rule_targets: set[str]) -> list[dict]:
+    """Đối chiếu Detection ↔ Panoptic để tìm ứng viên lỗi gán nhãn cho người review."""
+    candidates: list[dict] = []
+    items = context["manifest"]
+    yolo_classes = context["yolo_classes"]
+    panoptic_data = context["panoptic_data"]
+    valid_categories = context["valid_categories"]
+    thing_categories = context["thing_categories"]
 
-    # =========================================================================
-    # KIỂM TRA TỪNG ẢNH TRONG MANIFEST
-    # =========================================================================
-    for img_name, item in manifest_items.items():
-        img_rel = item.get("image")
-        label_rel = item.get("label")
-        mask_rel = item.get("mask")
+    if not panoptic_data:
+        return candidates
 
-        img_file = delivery_dir / img_rel
-        label_file = delivery_dir / label_rel
-        mask_file = delivery_dir / mask_rel
+    img_dims = {}
+    for img_info in panoptic_data.get("images", []):
+        stem = Path(img_info.get("file_name", "")).stem
+        img_dims[stem] = (img_info["width"], img_info["height"])
 
-        # Lỗi 1: missing_image
-        if not img_file.is_file():
-            errors.append({"type": "missing_image", "target": img_name})
+    ann_by_stem = {Path(ann["file_name"]).stem: ann for ann in panoptic_data.get("annotations", [])}
+
+    for stem, item_info in items.items():
+        # Mỗi ảnh chỉ có nhiều nhất 1 lỗi: bỏ qua ảnh đã có lỗi luật
+        if stem in rule_targets:
             continue
 
-        # Lỗi 2: wrong_hash
-        if calc_sha256(img_file) != item.get("image_sha256"):
-            errors.append({"type": "wrong_hash", "target": img_name})
-
-        # Lỗi Detection: invalid_class, bbox_out_of_bounds, duplicate_box
-        boxes: list[tuple[int, float, float, float, float]] = []
-        if label_file.is_file():
-            has_invalid_class = False
-            has_oob = False
-            lines = label_file.read_text(encoding="utf-8").splitlines()
-            for ln in lines:
-                ln = ln.strip()
-                if not ln:
-                    continue
-                parts = ln.split()
-                if len(parts) < 5:
-                    continue
-                c, x, y, w, h = int(float(parts[0])), float(parts[1]), float(parts[2]), float(parts[3]), float(parts[4])
-                if not (0 <= c < 80):
-                    has_invalid_class = True
-                if x - w / 2 < -0.01 or y - h / 2 < -0.01 or x + w / 2 > 1.01 or y + h / 2 > 1.01:
-                    has_oob = True
-                boxes.append((c, x, y, w, h))
-
-            if has_invalid_class:
-                errors.append({"type": "invalid_class", "target": img_name})
-            if has_oob:
-                errors.append({"type": "bbox_out_of_bounds", "target": img_name})
-
-            # duplicate_box: lặp cùng lớp, cùng kích thước chính xác, chỉ lệch tâm 1-2px
-            has_duplicate = False
-            n_boxes = len(boxes)
-            for i in range(n_boxes):
-                ci, xi, yi, wi, hi = boxes[i]
-                for j in range(i + 1, n_boxes):
-                    cj, xj, yj, wj, hj = boxes[j]
-                    if ci == cj:
-                        # Cùng kích thước chính xác (lỗi gài giữ nguyên width và height)
-                        if abs(wi - wj) < 1e-4 and abs(hi - hj) < 1e-4:
-                            dist = math.hypot(xi - xj, yi - yj)
-                            # Độ lệch tâm 1-2px (< 0.015 trên ảnh chuẩn hoá)
-                            if 0 < dist < 0.015:
-                                has_duplicate = True
-                                break
-                if has_duplicate:
-                    break
-            if has_duplicate:
-                errors.append({"type": "duplicate_box", "target": img_name})
-
-    # =========================================================================
-    # KIỂM TRA LỖI PANOPTIC (invalid_category_id & thing_overlap)
-    # =========================================================================
-    # Để đối chiếu panoptic annotation với từng ảnh:
-    # panoptic.json["images"] chứa mapping file_name / id
-    pan_images = {im["file_name"]: im for im in panoptic_doc.get("images", [])}
-    pan_images_by_id = {im["id"]: im for im in panoptic_doc.get("images", [])}
-    # annotation by image_id
-    pan_ann_by_img_id = {a["image_id"]: a for a in panoptic_doc.get("annotations", [])}
-    # Hoặc annotation by file_name
-    pan_ann_by_file = {Path(a["file_name"]).stem: a for a in panoptic_doc.get("annotations", [])}
-
-    for img_name, item in manifest_items.items():
-        mask_rel = item.get("mask")
-        mask_file = delivery_dir / mask_rel if mask_rel else None
-        # Tìm annotation tương ứng
-        ann = pan_ann_by_file.get(img_name)
-        if not ann:
-            # Tìm theo id số
-            try:
-                numeric_id = int(img_name.lstrip("0") or "0")
-                ann = pan_ann_by_img_id.get(numeric_id)
-            except ValueError:
-                ann = None
-
+        ann = ann_by_stem.get(stem)
         if not ann:
             continue
 
-        segs = ann.get("segments_info", [])
-        # invalid_category_id
-        for s in segs:
-            cid = s.get("category_id")
-            if cid not in cat_by_id:
-                errors.append({"type": "invalid_category_id", "target": img_name})
-                break
+        W, H = img_dims.get(stem, (0, 0))
+        label_file = delivery_dir / item_info["label"]
+        if not label_file.is_file() or W == 0 or H == 0:
+            continue
 
-        # thing_overlap: đếm số pixel thật của segment trong mask RGB rồi so với s["area"]
-        t_segs = [s for s in segs if s.get("category_id") in thing_cat_ids and not s.get("iscrowd")]
-        if len(t_segs) >= 2 and mask_file and mask_file.is_file() and pngutil is not None:
-            try:
-                w_px, h_px, raw_pixels = pngutil.read_rgb(mask_file)
-                stride = w_px * 3
-                pixel_counts: dict[int, int] = {}
-                for s in t_segs:
-                    sid = s["id"]
-                    bx, by, bw, bh = s.get("bbox", [0, 0, w_px, h_px])
-                    c = 0
-                    for y in range(max(0, by), min(h_px, by + bh)):
-                        row_start = y * stride
-                        for x in range(max(0, bx), min(w_px, bx + bw)):
-                            idx = row_start + x * 3
-                            seg_val = raw_pixels[idx] | (raw_pixels[idx + 1] << 8) | (raw_pixels[idx + 2] << 16)
-                            if seg_val == sid:
-                                c += 1
-                    pixel_counts[sid] = c
-
-                for s in t_segs:
-                    sid = s.get("id")
-                    declared_area = s.get("area", 0)
-                    actual_px = pixel_counts.get(sid, 0)
-                    if declared_area > 0 and actual_px < declared_area:
-                        diff = declared_area - actual_px
-                        if diff >= 10 and (actual_px / declared_area) < 0.90:
-                            errors.append({"type": "thing_overlap", "target": img_name})
-                            break
-            except Exception:
-                pass
-
-    # =========================================================================
-    # ĐỐI CHIẾU DETECTION ↔ PANOPTIC ĐỂ SINH CANDIDATES
-    # (class_swap, category_swap, bbox_drift, missing_box, instance_merge)
-    # =========================================================================
-    if candidates_path is not None:
-        for img_name, item in manifest_items.items():
-            label_rel = item.get("label")
-            label_file = delivery_dir / label_rel if label_rel else None
-            mask_rel = item.get("mask")
-            mask_file = delivery_dir / mask_rel if mask_rel else None
-
-            ann = pan_ann_by_file.get(img_name)
-            if not ann:
-                try:
-                    numeric_id = int(img_name.lstrip("0") or "0")
-                    ann = pan_ann_by_img_id.get(numeric_id)
-                except ValueError:
-                    ann = None
-
-            if not label_file or not label_file.is_file() or not ann:
+        # 1. Đọc YOLO boxes
+        yolo_list = []
+        for line in label_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
                 continue
+            parts = line.split()
+            if len(parts) < 5:
+                continue
+            cid = int(float(parts[0]))
+            xc, yc, w, h = map(float, parts[1:5])
+            bw, bh = w * W, h * H
+            xmin = (xc - w / 2) * W
+            ymin = (yc - h / 2) * H
+            xmax = xmin + bw
+            ymax = ymin + bh
+            yolo_list.append({
+                "class_id": cid,
+                "name": yolo_classes.get(cid, str(cid)),
+                "box": (xmin, ymin, xmax, ymax),
+                "norm": (xc, yc, w, h),
+                "norm_area": w * h,
+            })
 
-            # Đọc kích thước ảnh
-            im_meta = pan_images.get(f"{img_name}.jpg") or pan_images.get(ann.get("file_name"))
-            if not im_meta:
-                im_meta = pan_images_by_id.get(ann.get("image_id"))
-            W = im_meta["width"] if im_meta else 640
-            H = im_meta["height"] if im_meta else 480
-
-            # Đọc box YOLO
-            det_boxes = []
-            for ln in label_file.read_text(encoding="utf-8").splitlines():
-                ln = ln.strip()
-                if not ln:
-                    continue
-                parts = ln.split()
-                if len(parts) < 5:
-                    continue
-                c, x, y, w, h = int(float(parts[0])), float(parts[1]), float(parts[2]), float(parts[3]), float(parts[4])
-                if 0 <= c < len(classes80):
-                    cname = classes80[c]
-                else:
-                    cname = f"class_{c}"
-                # box tọa độ pixel [x1, y1, x2, y2]
-                bx1, by1 = (x - w / 2) * W, (y - h / 2) * H
-                bx2, by2 = (x + w / 2) * W, (y + h / 2) * H
-                det_boxes.append({
-                    "class_id": c,
-                    "class_name": cname,
-                    "norm": (x, y, w, h),
-                    "box_px": (bx1, by1, bx2, by2),
-                    "area_px": w * h * W * H,
+        # 2. Đọc Panoptic segments (chỉ lấy thing, bỏ iscrowd)
+        pan_list = []
+        for seg in ann.get("segments_info", []):
+            if seg["category_id"] in thing_categories and not seg.get("iscrowd", 0):
+                bx, by, bw, bh = seg["bbox"]
+                pan_list.append({
+                    "id": seg["id"],
+                    "cat_id": seg["category_id"],
+                    "name": valid_categories.get(seg["category_id"], str(seg["category_id"])),
+                    "box": (bx, by, bx + bw, by + bh),
+                    "area": seg.get("area", 0),
                 })
 
-            # Đọc segment things
-            thing_segs = []
-            for s in ann.get("segments_info", []):
-                cid = s.get("category_id")
-                if cid in thing_cat_ids and not s.get("iscrowd"):
-                    cname = cat_by_id.get(cid, {}).get("name", f"cat_{cid}")
-                    sx, sy, sw, sh = s.get("bbox", [0, 0, 0, 0])
-                    sbox_px = (sx, sy, sx + sw, sy + sh)
-                    thing_segs.append({
-                        "id": s["id"],
-                        "category_id": cid,
-                        "class_name": cname,
-                        "area": s.get("area", 0),
-                        "box_px": sbox_px,
-                    })
+        found_fault_for_image = False
+        matched_yolo = set()
+        matched_pan = set()
 
+        # Ma trận IoU
+        pair_ious = []
+        for yi, y_item in enumerate(yolo_list):
+            for pi, p_item in enumerate(pan_list):
+                iou = compute_iou(y_item["box"], p_item["box"])
+                pair_ious.append((iou, yi, pi))
 
+        pair_ious.sort(key=lambda x: x[0], reverse=True)
 
-            # 1. Kiểm tra instance_merge: 1 segment phủ 2 box detection cùng lớp
-            for s in thing_segs:
-                if s["area"] >= 512:
-                    matching_same_class_boxes = []
-                    for b in det_boxes:
-                        if b["class_name"] == s["class_name"]:
-                            # Kiểm tra xem box có nằm đáng kể trong segment không
-                            biou = bbox_iou(b["box_px"], s["box_px"])
-                            if biou > 0.15:
-                                matching_same_class_boxes.append(b)
-                    if len(matching_same_class_boxes) >= 2:
-                        candidates.append({
-                            "image": img_name,
-                            "type": "instance_merge",
-                            "class_name": s["class_name"],
-                            "details": f"Segment {s['id']} ({s['class_name']}, {s['area']}px) chứa {len(matching_same_class_boxes)} box detection cùng lớp",
-                        })
-
-            # 2. Ghép từng box với segment tốt nhất
-            for b in det_boxes:
-                best_seg = None
-                best_iou = 0.0
-                for s in thing_segs:
-                    iou = bbox_iou(b["box_px"], s["box_px"])
-                    if iou > best_iou:
-                        best_iou = iou
-                        best_seg = s
-
-                # Nếu IoU cao nhưng khác lớp -> class_swap hoặc category_swap!
-                if best_seg and best_iou >= 0.40 and b["class_name"] != best_seg["class_name"]:
+        # 1a. Kiểm tra class_swap / category_swap: trùng vị trí cao nhưng lệch tên lớp
+        for iou, yi, pi in pair_ious:
+            if iou >= 0.40 and yi not in matched_yolo and pi not in matched_pan:
+                y_name = yolo_list[yi]["name"]
+                p_name = pan_list[pi]["name"]
+                if y_name != p_name:
                     candidates.append({
-                        "image": img_name,
+                        "image": stem,
                         "type": "class_swap",
-                        "det_class": b["class_name"],
-                        "pan_class": best_seg["class_name"],
-                        "iou": round(best_iou, 3),
-                        "details": f"Detection: {b['class_name']} vs Panoptic: {best_seg['class_name']} (IoU {best_iou:.2f})",
+                        "note": f"IoU={iou:.2f}: YOLO='{y_name}' vs Panoptic='{p_name}'. Cần mở ảnh xác định nguồn sai."
                     })
+                    found_fault_for_image = True
+                    break
 
-                # Nếu cùng lớp nhưng bbox bị lệch (bbox_drift)
-                # Tín hiệu mạnh: IoU trung bình (0.15 - 0.65) và tâm bị trôi
-                if best_seg and b["class_name"] == best_seg["class_name"] and b["area_px"] >= 1000:
-                    bx1, by1, bx2, by2 = b["box_px"]
-                    sx1, sy1, sx2, sy2 = best_seg["box_px"]
-                    bcx, bcy = (bx1 + bx2) / 2, (by1 + by2) / 2
-                    scx, scy = (sx1 + sx2) / 2, (sy1 + sy2) / 2
-                    bw, bh = bx2 - bx1, by2 - by1
-                    sw, sh = sx2 - sx1, sy2 - sy1
-                    drift_x = abs(bcx - scx) / max(1.0, bw)
-                    drift_y = abs(bcy - scy) / max(1.0, bh)
-                    if (drift_x > 0.12 or drift_y > 0.12) and best_iou < 0.70:
+        if found_fault_for_image:
+            continue
+
+        # 1b. Ghép các cặp cùng lớp để kiểm tra bbox_drift
+        for iou, yi, pi in pair_ious:
+            if yi not in matched_yolo and pi not in matched_pan:
+                y_name = yolo_list[yi]["name"]
+                p_name = pan_list[pi]["name"]
+                if y_name == p_name and iou >= 0.15:
+                    matched_yolo.add(yi)
+                    matched_pan.add(pi)
+                    if yolo_list[yi]["norm_area"] >= 0.005 and iou <= 0.65:
                         candidates.append({
-                            "image": img_name,
+                            "image": stem,
                             "type": "bbox_drift",
-                            "class_name": b["class_name"],
-                            "iou": round(best_iou, 3),
-                            "drift": round(max(drift_x, drift_y), 3),
-                            "details": f"Box {b['class_name']} bị lệch khỏi mask (IoU {best_iou:.2f}, drift {max(drift_x, drift_y):.2f})",
+                            "note": f"Cùng lớp '{y_name}' nhưng IoU thấp ({iou:.2f}). Hộp detection có thể bị lệch."
                         })
+                        found_fault_for_image = True
+                        break
 
-            # 3. Kiểm tra missing_box: segment lớn mà không có box detection nào khớp cùng lớp
-            matched_thing_indices = set()
-            for b in det_boxes:
-                best_s_idx = None
-                best_s_iou = 0.0
-                for idx, s in enumerate(thing_segs):
-                    if s["class_name"] == b["class_name"]:
-                        iou = bbox_iou(b["box_px"], s["box_px"])
-                        if iou > best_s_iou:
-                            best_s_iou = iou
-                            best_s_idx = idx
-                if best_s_idx is not None and best_s_iou > 0.35:
-                    matched_thing_indices.add(best_s_idx)
+        if found_fault_for_image:
+            continue
 
-            for idx, s in enumerate(thing_segs):
-                if idx not in matched_thing_indices and s["area"] >= 2000:
+        # --- Dấu hiệu 3: instance_merge ---
+        for pi, p_item in enumerate(pan_list):
+            overlapping_yolo = []
+            for yi, y_item in enumerate(yolo_list):
+                if y_item["name"] == p_item["name"]:
+                    iou = compute_iou(y_item["box"], p_item["box"])
+                    if iou >= 0.20:
+                        overlapping_yolo.append(yi)
+            if len(overlapping_yolo) >= 2:
+                candidates.append({
+                    "image": stem,
+                    "type": "instance_merge",
+                    "note": f"Segment panoptic '{p_item['name']}' phủ đồng thời {len(overlapping_yolo)} box YOLO cùng lớp."
+                })
+                found_fault_for_image = True
+                break
+
+        if found_fault_for_image:
+            continue
+
+        # --- Dấu hiệu 4: missing_box ---
+        # TH1: Panoptic có vật thể thing nhưng YOLO thiếu số lượng của class đó
+        pan_class_counts: dict[str, int] = {}
+        for p in pan_list:
+            pan_class_counts[p["name"]] = pan_class_counts.get(p["name"], 0) + 1
+        yolo_class_counts: dict[str, int] = {}
+        for y in yolo_list:
+            yolo_class_counts[y["name"]] = yolo_class_counts.get(y["name"], 0) + 1
+
+        for cname, p_cnt in pan_class_counts.items():
+            y_cnt = yolo_class_counts.get(cname, 0)
+            if y_cnt < p_cnt:
+                candidates.append({
+                    "image": stem,
+                    "type": "missing_box",
+                    "note": f"Panoptic có {p_cnt} '{cname}' nhưng YOLO chỉ có {y_cnt}."
+                })
+                found_fault_for_image = True
+                break
+
+        if found_fault_for_image:
+            continue
+
+        # TH2: Segment panoptic không ghép được với box YOLO cùng loại nào
+        for pi, p_item in enumerate(pan_list):
+            if pi not in matched_pan and p_item["area"] >= 50:
+                same_cls_ious = [compute_iou(y["box"], p_item["box"]) for y in yolo_list if y["name"] == p_item["name"]]
+                max_iou = max(same_cls_ious, default=0.0)
+                if max_iou < 0.15:
                     candidates.append({
-                        "image": img_name,
+                        "image": stem,
                         "type": "missing_box",
-                        "class_name": s["class_name"],
-                        "area": s["area"],
-                        "details": f"Segment {s['class_name']} ({s['area']}px) không có box detection tương ứng",
+                        "note": f"Segment panoptic '{p_item['name']}' diện tích {p_item['area']}px không có box YOLO tương ứng."
                     })
+                    break
 
-    # Sắp xếp và loại trùng lặp
-    unique_errors = sorted({(e["type"], e["target"]): e for e in errors}.values(), key=lambda x: (x["type"], x["target"]))
-
-    out_path = Path(out_path)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps({"errors": unique_errors}, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"[Validator] Đã phát hiện {len(unique_errors)} lỗi luật và ghi vào {out_path}")
-
-    if candidates_path is not None:
-        cand_p = Path(candidates_path)
-        cand_p.parent.mkdir(parents=True, exist_ok=True)
-        # Lọc trùng lặp candidates theo (image, type)
-        seen_cand = set()
-        unique_cands = []
-        for c in candidates:
-            key = (c["image"], c["type"])
-            if key not in seen_cand:
-                seen_cand.add(key)
-                unique_cands.append(c)
-        cand_p.write_text(json.dumps({"candidates": unique_cands}, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        print(f"[Validator] Đã trích xuất {len(unique_cands)} ứng viên đối chiếu và ghi vào {cand_p}")
+    return candidates
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Validator kiểm tra bàn giao dữ liệu")
-    parser.add_argument("delivery_dir", help="Đường dẫn đến thư mục delivery/")
-    parser.add_argument("--out", required=True, help="Đường dẫn file errors.json đầu ra")
-    parser.add_argument("--candidates", help="Đường dẫn file candidates.json đầu ra (tùy chọn)")
+# ==============================================================================
+# MAIN ENTRY POINT
+# ==============================================================================
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Validator bắt lỗi luật & đối chiếu sinh ứng viên")
+    parser.add_argument("delivery", type=Path, help="Đường dẫn thư mục delivery cần kiểm tra")
+    parser.add_argument("--out", type=Path, required=True, help="Đường dẫn file errors.json đầu ra")
+    parser.add_argument("--candidates", type=Path, help="Đường dẫn file candidates.json (nếu muốn sinh ứng viên)")
     args = parser.parse_args()
 
-    validate_delivery(Path(args.delivery_dir), Path(args.out), Path(args.candidates) if args.candidates else None)
+    delivery_dir = args.delivery
+    if not delivery_dir.is_dir():
+        print(f"Lỗi: {delivery_dir} không phải là thư mục hợp lệ.", file=sys.stderr)
+        return 1
+
+    print(f"[*] Đang kiểm tra lỗi luật trên {delivery_dir}...")
+    rule_errors, context = validate_rules(delivery_dir)
+
+    unique_rule_errors = sorted(
+        { (e["type"], e["target"]): e for e in rule_errors }.values(),
+        key=lambda x: (x["type"], x["target"])
+    )
+
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    out_content = {"errors": unique_rule_errors}
+    args.out.write_text(json.dumps(out_content, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"[+] Đã phát hiện {len(unique_rule_errors)} lỗi luật -> Ghi tại: {args.out}")
+
+    if args.candidates:
+        rule_targets = {e["target"] for e in unique_rule_errors}
+        print("[*] Đang đối chiếu Detection ↔ Panoptic để trích xuất ứng viên...")
+        candidates = extract_candidates(delivery_dir, context, rule_targets)
+        args.candidates.parent.mkdir(parents=True, exist_ok=True)
+        cand_content = {"candidates": candidates}
+        args.candidates.write_text(json.dumps(cand_content, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"[+] Đã sinh {len(candidates)} ứng viên cần review mắt -> Ghi tại: {args.candidates}")
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
